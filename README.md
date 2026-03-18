@@ -32,11 +32,18 @@ booxcp df                     # Storage info
 
 ## Install
 
-```bash
-# dependency
-brew install libmtp
+### Homebrew (CLI only)
 
-# build both targets
+```bash
+brew install 1F47E/tap/booxdrop
+```
+
+### From source (GUI + CLI)
+
+```bash
+brew install libmtp xcodegen
+git clone https://github.com/1F47E/booxdrop.git
+cd booxdrop
 xcodegen generate
 xcodebuild -scheme BooxDrop -configuration Release build
 xcodebuild -scheme booxcp -configuration Release build
