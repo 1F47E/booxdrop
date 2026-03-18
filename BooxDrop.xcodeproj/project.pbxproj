@@ -1,0 +1,440 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5281EF0496446EA3C12495EA /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EF30CA5187DDE141551E83A /* EmptyStateView.swift */; };
+		53B05DB2B24BF777A88D087B /* MTPDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129D04C55F53AF02A62216BF /* MTPDevice.swift */; };
+		57CE2E61F945CEF3AD037C6D /* BooxDropApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */; };
+		79E49EBA7EE2D5E3C806A028 /* DeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82522A9FE8DA6AB93F71C6F /* DeviceManager.swift */; };
+		87141D5A62311E5EB397BB77 /* MTPFileInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4018BE64BC028AEC4C11068E /* MTPFileInfo.swift */; };
+		CB0A7178DB2416436E77CEF2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71E159BA0958370C380B1D5E /* ContentView.swift */; };
+		DEBD7697322B4C783DA35E53 /* FileBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2FCC7E05644029957D4275 /* FileBrowserView.swift */; };
+		FFDC9604A251E5C335BDF3D1 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8A6CB414A8F80CE1A9390B8 /* main.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		102AA3E892136CEF0DD7B43F /* BooxDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BooxDrop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		129D04C55F53AF02A62216BF /* MTPDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MTPDevice.swift; sourceTree = "<group>"; };
+		3EF30CA5187DDE141551E83A /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		4018BE64BC028AEC4C11068E /* MTPFileInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MTPFileInfo.swift; sourceTree = "<group>"; };
+		514B62FA8A7F00C89DAD52C6 /* BooxDrop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BooxDrop.entitlements; sourceTree = "<group>"; };
+		6960814C49D83DA6C0C7D85D /* booxcp */ = {isa = PBXFileReference; includeInIndex = 0; path = booxcp; sourceTree = BUILT_PRODUCTS_DIR; };
+		71E159BA0958370C380B1D5E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		93E9067BBB8E8EB381A2B77A /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
+		A82522A9FE8DA6AB93F71C6F /* DeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceManager.swift; sourceTree = "<group>"; };
+		A8A6CB414A8F80CE1A9390B8 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		AB2FCC7E05644029957D4275 /* FileBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserView.swift; sourceTree = "<group>"; };
+		B7F293568481747E11F2BF83 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
+		FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BooxDropApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		06DFCE9B80A72EC18293B525 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				71E159BA0958370C380B1D5E /* ContentView.swift */,
+				3EF30CA5187DDE141551E83A /* EmptyStateView.swift */,
+				AB2FCC7E05644029957D4275 /* FileBrowserView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		5B3B1795669784D8AC10F0BA /* MTP */ = {
+			isa = PBXGroup;
+			children = (
+				93E9067BBB8E8EB381A2B77A /* BridgingHeader.h */,
+				129D04C55F53AF02A62216BF /* MTPDevice.swift */,
+				4018BE64BC028AEC4C11068E /* MTPFileInfo.swift */,
+			);
+			path = MTP;
+			sourceTree = "<group>";
+		};
+		6F24A6A17E7FA51DCB7815EA /* BooxDrop */ = {
+			isa = PBXGroup;
+			children = (
+				514B62FA8A7F00C89DAD52C6 /* BooxDrop.entitlements */,
+				FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */,
+				DA74E898AE700ECEBC1422B8 /* Models */,
+				5B3B1795669784D8AC10F0BA /* MTP */,
+				06DFCE9B80A72EC18293B525 /* Views */,
+			);
+			path = BooxDrop;
+			sourceTree = "<group>";
+		};
+		76F89B27098522CCB7B263AD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6960814C49D83DA6C0C7D85D /* booxcp */,
+				102AA3E892136CEF0DD7B43F /* BooxDrop.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CDB8B191C518499B5EE53706 = {
+			isa = PBXGroup;
+			children = (
+				CF109B44F78EDDD815182BF3 /* BooxCLI */,
+				6F24A6A17E7FA51DCB7815EA /* BooxDrop */,
+				76F89B27098522CCB7B263AD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CF109B44F78EDDD815182BF3 /* BooxCLI */ = {
+			isa = PBXGroup;
+			children = (
+				B7F293568481747E11F2BF83 /* BridgingHeader.h */,
+				A8A6CB414A8F80CE1A9390B8 /* main.swift */,
+			);
+			path = BooxCLI;
+			sourceTree = "<group>";
+		};
+		DA74E898AE700ECEBC1422B8 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A82522A9FE8DA6AB93F71C6F /* DeviceManager.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		35A294EE475C9625D49927A9 /* booxcp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7ADA116CBFE386A4EE3E4B44 /* Build configuration list for PBXNativeTarget "booxcp" */;
+			buildPhases = (
+				852CAC4CD452154114850C3D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = booxcp;
+			packageProductDependencies = (
+			);
+			productName = booxcp;
+			productReference = 6960814C49D83DA6C0C7D85D /* booxcp */;
+			productType = "com.apple.product-type.tool";
+		};
+		6BDF4F730AEBA32FDA635AAA /* BooxDrop */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3EF8E10949EE09C6C7E22A7C /* Build configuration list for PBXNativeTarget "BooxDrop" */;
+			buildPhases = (
+				06AE989CEF66EBB39FB83BBB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BooxDrop;
+			packageProductDependencies = (
+			);
+			productName = BooxDrop;
+			productReference = 102AA3E892136CEF0DD7B43F /* BooxDrop.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		22BBE7E068D279AE41E53346 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = B14EC516064B4F3FC13DB204 /* Build configuration list for PBXProject "BooxDrop" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = CDB8B191C518499B5EE53706;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 76F89B27098522CCB7B263AD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6BDF4F730AEBA32FDA635AAA /* BooxDrop */,
+				35A294EE475C9625D49927A9 /* booxcp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		06AE989CEF66EBB39FB83BBB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57CE2E61F945CEF3AD037C6D /* BooxDropApp.swift in Sources */,
+				CB0A7178DB2416436E77CEF2 /* ContentView.swift in Sources */,
+				79E49EBA7EE2D5E3C806A028 /* DeviceManager.swift in Sources */,
+				5281EF0496446EA3C12495EA /* EmptyStateView.swift in Sources */,
+				DEBD7697322B4C783DA35E53 /* FileBrowserView.swift in Sources */,
+				53B05DB2B24BF777A88D087B /* MTPDevice.swift in Sources */,
+				87141D5A62311E5EB397BB77 /* MTPFileInfo.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		852CAC4CD452154114850C3D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FFDC9604A251E5C335BDF3D1 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2C937AE810F2860A28C38197 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = /opt/homebrew/include;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "-lmtp";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.booxcp;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = BooxCLI/BridgingHeader.h;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		67569A431C5D657CF31CC554 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BooxDrop/BooxDrop.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = /opt/homebrew/include;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-lmtp";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.BooxDrop;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = BooxDrop/MTP/BridgingHeader.h;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		7784A72245FF166F1B6B54FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BooxDrop/BooxDrop.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = /opt/homebrew/include;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-lmtp";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.BooxDrop;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = BooxDrop/MTP/BridgingHeader.h;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		989689A2A2BD54B76B2D802E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		CFD502F9C10E0053D3D77ABF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = /opt/homebrew/include;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "-lmtp";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.booxcp;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = BooxCLI/BridgingHeader.h;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DE7CFDF8CA118BCE3C42391B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3EF8E10949EE09C6C7E22A7C /* Build configuration list for PBXNativeTarget "BooxDrop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7784A72245FF166F1B6B54FF /* Debug */,
+				67569A431C5D657CF31CC554 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7ADA116CBFE386A4EE3E4B44 /* Build configuration list for PBXNativeTarget "booxcp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CFD502F9C10E0053D3D77ABF /* Debug */,
+				2C937AE810F2860A28C38197 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B14EC516064B4F3FC13DB204 /* Build configuration list for PBXProject "BooxDrop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE7CFDF8CA118BCE3C42391B /* Debug */,
+				989689A2A2BD54B76B2D802E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 22BBE7E068D279AE41E53346 /* Project object */;
+}
