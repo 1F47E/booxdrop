@@ -2,7 +2,7 @@ class Booxdrop < Formula
   desc "Native macOS MTP file manager for Boox e-readers — GUI + CLI"
   homepage "https://github.com/1F47E/booxdrop"
   url "https://github.com/1F47E/booxdrop.git", branch: "main"
-  version "1.0.0"
+  version "1.1.0"
   license "MIT"
 
   depends_on "libmtp"

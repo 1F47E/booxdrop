@@ -3,3 +3,8 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .build/
+build/
+*.dmg
+/icon_1024.png
+/icon_1024_v2.png
+/icon_1024_v3.png

@@ -31,6 +31,7 @@
 		AB2FCC7E05644029957D4275 /* FileBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserView.swift; sourceTree = "<group>"; };
 		B7F293568481747E11F2BF83 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
 		FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BooxDropApp.swift; sourceTree = "<group>"; };
+		AA000000000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -57,6 +58,7 @@
 		6F24A6A17E7FA51DCB7815EA /* BooxDrop */ = {
 			isa = PBXGroup;
 			children = (
+				AA000000000000000000001A /* Assets.xcassets */,
 				514B62FA8A7F00C89DAD52C6 /* BooxDrop.entitlements */,
 				FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */,
 				DA74E898AE700ECEBC1422B8 /* Models */,
@@ -231,7 +233,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				OTHER_LDFLAGS = "-lmtp";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.BooxDrop;
 				SDKROOT = macosx;
@@ -256,7 +258,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				OTHER_LDFLAGS = "-lmtp";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.BooxDrop;
 				SDKROOT = macosx;
