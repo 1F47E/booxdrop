@@ -2,13 +2,17 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/canvas_item.dart';
+import '../providers/live_session_provider.dart';
+import '../services/device_identity_service.dart';
 import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/color_picker.dart';
 import '../widgets/drawing_canvas.dart';
+import '../widgets/session_status_banner.dart';
 import '../widgets/stroke_picker.dart';
 import '../widgets/text_tool_dialog.dart';
 import 'gallery_screen.dart';
+import 'live_session_sheet.dart';
 import 'settings_screen.dart';
 
 enum _Tool { pen, text }
@@ -244,6 +248,33 @@ class _DrawingScreenState extends State<DrawingScreen> {
     }
   }
 
+  void _openLiveSheet() async {
+    final identity = context.read<DeviceIdentityService>();
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => LiveSessionSheet(identity: identity),
+    );
+    if (result == null || !mounted) return;
+
+    final session = context.read<LiveSessionProvider>();
+    const serverUrl = 'ws://localhost:8080/ws/live'; // TODO: configure
+
+    if (result['action'] == 'create') {
+      session.createSession(
+        deviceId: identity.deviceId,
+        displayName: identity.displayName,
+        serverUrl: serverUrl,
+      );
+    } else if (result['action'] == 'join') {
+      session.joinSession(
+        code: result['code'] as String,
+        deviceId: identity.deviceId,
+        displayName: identity.displayName,
+        serverUrl: serverUrl,
+      );
+    }
+  }
+
   void _onUndo() {
     setState(() {
       // Remove last item (stroke or text, whichever was added most recently)
@@ -281,6 +312,19 @@ class _DrawingScreenState extends State<DrawingScreen> {
         ),
         backgroundColor: Colors.black,
         actions: [
+          Consumer<LiveSessionProvider>(
+            builder: (_, session, _) => TextButton(
+              onPressed: session.isLive ? null : _openLiveSheet,
+              child: Text(
+                session.isLive ? 'LIVE' : 'Live',
+                style: TextStyle(
+                  color: session.isLive ? Colors.green : Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.photo_library, color: Colors.white),
             onPressed: () {
@@ -301,6 +345,9 @@ class _DrawingScreenState extends State<DrawingScreen> {
       ),
       body: Column(
         children: [
+          // Live session banner
+          const SessionStatusBanner(),
+
           // Canvas
           Expanded(
             child: GestureDetector(

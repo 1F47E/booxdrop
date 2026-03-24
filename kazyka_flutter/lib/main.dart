@@ -1,19 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'providers/live_session_provider.dart';
 import 'screens/drawing_screen.dart';
+import 'services/device_identity_service.dart';
+import 'services/fake_collaboration_transport.dart';
 import 'services/settings_service.dart';
 
-void main() {
-  runApp(const KazykaApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final identity = DeviceIdentityService();
+  await identity.init();
+  runApp(KazykaApp(identity: identity));
 }
 
 class KazykaApp extends StatelessWidget {
-  const KazykaApp({super.key});
+  final DeviceIdentityService identity;
+  const KazykaApp({super.key, required this.identity});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => SettingsService(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SettingsService()),
+        ChangeNotifierProvider(
+          create: (_) =>
+              LiveSessionProvider(FakeCollaborationTransport()),
+        ),
+        Provider.value(value: identity),
+      ],
       child: MaterialApp(
         title: 'Kazyka',
         debugShowCheckedModeBanner: false,
