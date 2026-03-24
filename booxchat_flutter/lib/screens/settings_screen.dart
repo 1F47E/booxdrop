@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
+import '../services/tts_service.dart';
 import 'image_gallery_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -187,6 +188,93 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 8),
+              ],
+              if (settings.availableTtsProviders.isNotEmpty) ...[
+                const Divider(height: 1, color: Colors.black26),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: const Text(
+                    'TTS Provider',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                if (settings.availableTtsProviders.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SegmentedButton<String>(
+                      segments: settings.availableTtsProviders
+                          .map((p) => ButtonSegment(
+                                value: p,
+                                label: Text(
+                                    SettingsProvider.ttsProviderNames[p] ?? p),
+                              ))
+                          .toList(),
+                      selected: {settings.ttsProvider},
+                      onSelectionChanged: (v) {
+                        settings.setTtsProvider(v.first);
+                        EinkService.requestFullRefresh();
+                      },
+                      style: ButtonStyle(
+                        foregroundColor:
+                            WidgetStatePropertyAll(Colors.black),
+                        backgroundColor:
+                            WidgetStateProperty.resolveWith((states) {
+                          return states.contains(WidgetState.selected)
+                              ? Colors.black12
+                              : Colors.transparent;
+                        }),
+                      ),
+                    ),
+                  ),
+                if (settings.availableTtsProviders.length == 1)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      SettingsProvider.ttsProviderNames[settings.ttsProvider] ??
+                          settings.ttsProvider,
+                      style: const TextStyle(fontSize: 15, color: Colors.black54),
+                    ),
+                  ),
+                const Divider(height: 1, color: Colors.black26),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: const Text(
+                    'Voice',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                ...() {
+                  final provider = TtsService.getProvider(settings);
+                  return provider.availableVoices.entries.map((e) {
+                    final isSelected = e.key == settings.ttsVoice;
+                    return ListTile(
+                      dense: true,
+                      title: Text(
+                        e.value,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: Colors.black,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check, color: Colors.black, size: 20)
+                          : null,
+                      selected: isSelected,
+                      selectedTileColor: Colors.black.withValues(alpha: 0.05),
+                      onTap: () {
+                        settings.setTtsVoice(e.key);
+                        EinkService.requestFullRefresh();
+                      },
+                    );
+                  }).toList();
+                }(),
                 const SizedBox(height: 8),
               ],
               const Divider(height: 1, color: Colors.black26),

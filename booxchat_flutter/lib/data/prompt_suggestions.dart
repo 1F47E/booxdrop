@@ -31,6 +31,8 @@ const _generic = <String>[
   'Help me write a list',
   'Tell me about a famous person',
   'Draw me something cool',
+  'Tell me a fun fact out loud',
+  'Read me today\'s top news',
 ];
 
 const _young = <String>[
@@ -91,6 +93,9 @@ const _young = <String>[
   'How does a rainbow form?',
   'Tell me about the moon',
   'What\'s the fastest animal?',
+  'Tell me a story out loud',
+  'Sing me a silly song',
+  'Read me a bedtime story',
 ];
 
 const _older = <String>[
@@ -156,6 +161,9 @@ const _older = <String>[
   'Tell me an amazing world record',
   'Quiz me on world capitals',
   'Give me a logic puzzle',
+  'Tell me a science fact out loud',
+  'Narrate an adventure for me',
+  'Read me a short history story',
 ];
 
 final _random = Random();

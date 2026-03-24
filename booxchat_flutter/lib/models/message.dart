@@ -5,6 +5,7 @@ class Message {
   final String? imagePath;
   final String? toolCallId; // for role='tool' responses
   final List<String>? quickReplies;
+  final String? audioPath;
 
   Message({
     String? id,
@@ -13,7 +14,18 @@ class Message {
     this.imagePath,
     this.toolCallId,
     this.quickReplies,
+    this.audioPath,
   }) : id = id ?? '${DateTime.now().microsecondsSinceEpoch}_${role.hashCode}';
+
+  Message copyWith({String? audioPath}) => Message(
+        id: id,
+        role: role,
+        content: content,
+        imagePath: imagePath,
+        toolCallId: toolCallId,
+        quickReplies: quickReplies,
+        audioPath: audioPath ?? this.audioPath,
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -21,6 +33,7 @@ class Message {
         'content': content,
         if (imagePath != null) 'imagePath': imagePath,
         if (quickReplies != null) 'quickReplies': quickReplies,
+        if (audioPath != null) 'audioPath': audioPath,
       };
 
   factory Message.fromJson(Map<String, dynamic> json) => Message(
@@ -31,5 +44,6 @@ class Message {
         quickReplies: (json['quickReplies'] as List<dynamic>?)
             ?.map((e) => e as String)
             .toList(),
+        audioPath: json['audioPath'] as String?,
       );
 }

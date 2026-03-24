@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 class StorageService {
   static Directory? _imageDir;
   static Directory? _chatsDir;
+  static Directory? _audioDir;
 
   static Future<Directory> get imageDirectory async {
     if (_imageDir != null && await _imageDir!.exists()) return _imageDir!;
@@ -56,6 +57,30 @@ class StorageService {
   static Future<void> deleteSessionData(String sessionId) async {
     final dir = await chatsDirectory;
     final file = File('${dir.path}/$sessionId.json');
+    if (await file.exists()) await file.delete();
+  }
+
+  static Future<Directory> get audioDirectory async {
+    if (_audioDir != null && await _audioDir!.exists()) return _audioDir!;
+    final appDir = await getApplicationDocumentsDirectory();
+    _audioDir = Directory('${appDir.path}/audio');
+    if (!await _audioDir!.exists()) {
+      await _audioDir!.create(recursive: true);
+    }
+    return _audioDir!;
+  }
+
+  /// Saves raw audio bytes to disk, returns the file path.
+  static Future<String> saveAudio(List<int> bytes, String messageId) async {
+    final dir = await audioDirectory;
+    final file = File('${dir.path}/$messageId.mp3');
+    await file.writeAsBytes(bytes);
+    return file.path;
+  }
+
+  /// Deletes an audio file if it exists.
+  static Future<void> deleteAudio(String path) async {
+    final file = File(path);
     if (await file.exists()) await file.delete();
   }
 

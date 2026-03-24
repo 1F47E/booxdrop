@@ -17,6 +17,7 @@ dependencies:
   shared_preferences: ^2.2.0
   image_picker: ^1.0.0
   image_gallery_saver_plus: ^4.0.1
+  just_audio: ^0.10.5
 
 dev_dependencies:
   flutter_test:

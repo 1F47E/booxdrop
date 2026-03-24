@@ -6,10 +6,24 @@ import '../models/message.dart';
 import '../models/session.dart';
 import '../services/openai_service.dart';
 import '../services/storage_service.dart';
+import '../services/tts_service.dart';
 import '../services/connectivity_service.dart';
 import 'settings_provider.dart';
 
 class ChatProvider extends ChangeNotifier {
+  static const _kidsTtsLabels = [
+    'The robot is learning to speak...',
+    'Warming up the voice box...',
+    'The parrot is rehearsing...',
+    'Practicing in the mirror...',
+    'Tuning the magic microphone...',
+    'The storyteller is getting ready...',
+    'Clearing the dragon\'s throat...',
+    'Charging the voice crystals...',
+    'The wizard is composing...',
+    'Polishing the words...',
+  ];
+
   final SettingsProvider _settings;
   final List<Message> _messages = [];
   bool _isLoading = false;
@@ -216,14 +230,17 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> deleteSession(String sessionId) async {
-    // Delete images from this session
+    // Delete images and audio from this session
     final json = await StorageService.loadSessionMessages(sessionId);
     if (json != null) {
       final data = jsonDecode(json) as Map<String, dynamic>;
       final msgList = data['messages'] as List;
       for (final m in msgList) {
-        final path = (m as Map<String, dynamic>)['imagePath'] as String?;
-        if (path != null) await StorageService.deleteImage(path);
+        final map = m as Map<String, dynamic>;
+        final imgPath = map['imagePath'] as String?;
+        if (imgPath != null) await StorageService.deleteImage(imgPath);
+        final audPath = map['audioPath'] as String?;
+        if (audPath != null) await StorageService.deleteAudio(audPath);
       }
     }
     await StorageService.deleteSessionData(sessionId);
@@ -291,16 +308,49 @@ class ChatProvider extends ChangeNotifier {
         },
       );
       final parsed = _parseQuickReplies(response.content);
-      _messages.add(Message(
+      final msg = Message(
         role: 'assistant',
         content: parsed.content,
         imagePath: response.imagePath,
         quickReplies: parsed.quickReplies,
-      ));
+      );
+      _messages.add(msg);
+      _isLoading = false;
+      _toolStatus = null;
+      notifyListeners();
       _scheduleSave();
+
+      // Generate TTS audio (non-blocking — text is already visible)
+      if (parsed.content.isNotEmpty &&
+          _settings.availableTtsProviders.isNotEmpty) {
+        try {
+          _toolStatus = _settings.kidsMode
+              ? _kidsTtsLabels[
+                  DateTime.now().microsecond % _kidsTtsLabels.length]
+              : '\u{1f50a} Generating audio...';
+          notifyListeners();
+
+          final ttsProvider = TtsService.getProvider(_settings);
+          final bytes = await ttsProvider.speak(
+            text: parsed.content,
+            voice: _settings.ttsVoice,
+          );
+          final audioPath =
+              await StorageService.saveAudio(bytes, msg.id);
+          final idx = _messages.indexOf(msg);
+          if (idx >= 0) {
+            _messages[idx] = msg.copyWith(audioPath: audioPath);
+            _scheduleSave();
+          }
+        } catch (_) {
+          // TTS failure is non-critical — text is already shown
+        } finally {
+          _toolStatus = null;
+          notifyListeners();
+        }
+      }
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
-    } finally {
       _isLoading = false;
       _toolStatus = null;
       notifyListeners();

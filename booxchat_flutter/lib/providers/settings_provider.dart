@@ -1,11 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/tts_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const imageProviderNames = {
     'nano_banana': 'Nano Banana',
     'openai': 'OpenAI',
+  };
+  static const ttsProviderNames = {
+    'openai': 'OpenAI',
+    'elevenlabs': 'ElevenLabs',
   };
   static const nanoBananaModelNames = {
     'gemini-3.1-flash-image-preview': 'Nano Banana 2',
@@ -20,10 +25,17 @@ class SettingsProvider extends ChangeNotifier {
       (dotenv.env['GOOGLE_AI_API_KEY'] ?? '').isNotEmpty;
   static bool get hasOpenAIKey =>
       (dotenv.env['OPENAI_API_KEY'] ?? '').isNotEmpty;
+  static bool get hasElevenLabsKey =>
+      (dotenv.env['ELEVENLABS_API_KEY'] ?? '').isNotEmpty;
 
   List<String> get availableImageProviders => [
         if (hasGoogleKey) 'nano_banana',
         if (hasOpenAIKey) 'openai',
+      ];
+
+  List<String> get availableTtsProviders => [
+        if (hasOpenAIKey) 'openai',
+        if (hasElevenLabsKey) 'elevenlabs',
       ];
 
   static const _kKidsMode = 'settings_kids_mode';
@@ -31,12 +43,16 @@ class SettingsProvider extends ChangeNotifier {
   static const _kFontSize = 'settings_font_size';
   static const _kImageProvider = 'settings_image_provider';
   static const _kNanoBananaModel = 'settings_nano_banana_model';
+  static const _kTtsProvider = 'settings_tts_provider';
+  static const _kTtsVoice = 'settings_tts_voice';
 
   bool _kidsMode = false;
   int _kidsAge = 7;
   double _fontSize = 17; // default +2 from original 15
   String _imageProvider = 'nano_banana';
   String _nanoBananaModel = 'gemini-3.1-flash-image-preview';
+  String _ttsProvider = 'openai';
+  String _ttsVoice = 'nova';
 
   bool get kidsMode => _kidsMode;
   int get kidsAge => _kidsAge;
@@ -49,6 +65,18 @@ class SettingsProvider extends ChangeNotifier {
         : 'nano_banana';
   }
   String get nanoBananaModel => _nanoBananaModel;
+  String get ttsProvider {
+    if (availableTtsProviders.contains(_ttsProvider)) return _ttsProvider;
+    return availableTtsProviders.isNotEmpty
+        ? availableTtsProviders.first
+        : 'openai';
+  }
+
+  String get ttsVoice {
+    final provider = TtsService.getProvider(this);
+    if (provider.availableVoices.containsKey(_ttsVoice)) return _ttsVoice;
+    return provider.availableVoices.keys.first;
+  }
 
   SettingsProvider() {
     _load();
@@ -62,6 +90,8 @@ class SettingsProvider extends ChangeNotifier {
     _imageProvider = prefs.getString(_kImageProvider) ?? 'nano_banana';
     _nanoBananaModel = prefs.getString(_kNanoBananaModel) ??
         'gemini-3.1-flash-image-preview';
+    _ttsProvider = prefs.getString(_kTtsProvider) ?? 'openai';
+    _ttsVoice = prefs.getString(_kTtsVoice) ?? 'nova';
     notifyListeners();
   }
 
@@ -98,5 +128,23 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kNanoBananaModel, model);
+  }
+
+  Future<void> setTtsProvider(String value) async {
+    _ttsProvider = value;
+    // Auto-reset voice to first available for the new provider
+    final provider = TtsService.getProvider(this);
+    _ttsVoice = provider.availableVoices.keys.first;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kTtsProvider, value);
+    await prefs.setString(_kTtsVoice, _ttsVoice);
+  }
+
+  Future<void> setTtsVoice(String voice) async {
+    _ttsVoice = voice;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kTtsVoice, voice);
   }
 }

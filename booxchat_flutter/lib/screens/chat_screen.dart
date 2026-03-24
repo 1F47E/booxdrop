@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'full_screen_image.dart';
 import '../data/prompt_suggestions.dart';
@@ -160,7 +162,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _MessageBubble(message: message),
+                                _MessageBubble(key: ValueKey(message.id), message: message),
                                 if (isLastAssistant)
                                   _QuickReplies(
                                     replies: message.quickReplies!,
@@ -173,6 +175,18 @@ class _ChatScreenState extends State<ChatScreen> {
                         },
                       ),
               ),
+
+              // TTS generation status (shown after text is already visible)
+              if (provider.toolStatus != null && !provider.isLoading)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Text(
+                    provider.toolStatus!,
+                    style: const TextStyle(
+                        color: Colors.black54, fontSize: 13),
+                  ),
+                ),
 
               // Error banner
               if (provider.error != null)
@@ -294,9 +308,19 @@ class _WarningBanner extends StatelessWidget {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
+class _MessageBubble extends StatefulWidget {
   final Message message;
-  const _MessageBubble({required this.message});
+  const _MessageBubble({super.key, required this.message});
+
+  @override
+  State<_MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<_MessageBubble> {
+  AudioPlayer? _player;
+  bool _isPlaying = false;
+  bool _toggling = false;
+  StreamSubscription? _playerSub;
 
   static void _showFullScreenImage(BuildContext context, String path) {
     Navigator.push(
@@ -307,8 +331,46 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
+  void _toggleAudio() async {
+    if (_toggling) return;
+    _toggling = true;
+    try {
+      if (_player == null) {
+        _player = AudioPlayer();
+        _playerSub = _player!.playerStateStream.listen((state) {
+          final playing = state.playing &&
+              state.processingState != ProcessingState.completed;
+          if (mounted && _isPlaying != playing) {
+            setState(() => _isPlaying = playing);
+          }
+          if (state.processingState == ProcessingState.completed) {
+            _player?.stop();
+            _player?.seek(Duration.zero);
+          }
+        });
+      }
+
+      if (_isPlaying) {
+        await _player!.stop();
+      } else {
+        await _player!.setFilePath(widget.message.audioPath!);
+        await _player!.play();
+      }
+    } finally {
+      _toggling = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _playerSub?.cancel();
+    _player?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final message = widget.message;
     final isUser = message.role == 'user';
     final settings = context.watch<SettingsProvider>();
     final fontSize = settings.fontSize;
@@ -353,6 +415,28 @@ class _MessageBubble extends StatelessWidget {
                   fontSize: fontSize,
                 ),
               ),
+            if (message.audioPath != null && !isUser) ...[
+              const SizedBox(height: 4),
+              GestureDetector(
+                onTap: _toggleAudio,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isPlaying ? Icons.stop : Icons.play_arrow,
+                      color: Colors.black,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isPlaying ? 'Stop' : 'Play',
+                      style: const TextStyle(
+                          color: Colors.black54, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (message.imagePath != null) ...[
               if (displayText.isNotEmpty) const SizedBox(height: 8),
               GestureDetector(
