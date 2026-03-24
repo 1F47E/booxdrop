@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		5281EF0496446EA3C12495EA /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EF30CA5187DDE141551E83A /* EmptyStateView.swift */; };
+		52C66935EB72C66AFBFD12A7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AE606B6F7CE69A7ED76E39A5 /* Assets.xcassets */; };
 		53B05DB2B24BF777A88D087B /* MTPDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129D04C55F53AF02A62216BF /* MTPDevice.swift */; };
 		57CE2E61F945CEF3AD037C6D /* BooxDropApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */; };
 		79E49EBA7EE2D5E3C806A028 /* DeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82522A9FE8DA6AB93F71C6F /* DeviceManager.swift */; };
@@ -29,9 +30,9 @@
 		A82522A9FE8DA6AB93F71C6F /* DeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceManager.swift; sourceTree = "<group>"; };
 		A8A6CB414A8F80CE1A9390B8 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		AB2FCC7E05644029957D4275 /* FileBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserView.swift; sourceTree = "<group>"; };
+		AE606B6F7CE69A7ED76E39A5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B7F293568481747E11F2BF83 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
 		FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BooxDropApp.swift; sourceTree = "<group>"; };
-		AA000000000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -58,7 +59,7 @@
 		6F24A6A17E7FA51DCB7815EA /* BooxDrop */ = {
 			isa = PBXGroup;
 			children = (
-				AA000000000000000000001A /* Assets.xcassets */,
+				AE606B6F7CE69A7ED76E39A5 /* Assets.xcassets */,
 				514B62FA8A7F00C89DAD52C6 /* BooxDrop.entitlements */,
 				FEB268E6F914E9B6E0191B99 /* BooxDropApp.swift */,
 				DA74E898AE700ECEBC1422B8 /* Models */,
@@ -128,6 +129,7 @@
 			buildConfigurationList = 3EF8E10949EE09C6C7E22A7C /* Build configuration list for PBXNativeTarget "BooxDrop" */;
 			buildPhases = (
 				06AE989CEF66EBB39FB83BBB /* Sources */,
+				1E7533687A1956B5954FD5E0 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -170,6 +172,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1E7533687A1956B5954FD5E0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				52C66935EB72C66AFBFD12A7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		06AE989CEF66EBB39FB83BBB /* Sources */ = {
@@ -233,7 +246,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.0.0;
 				OTHER_LDFLAGS = "-lmtp";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.BooxDrop;
 				SDKROOT = macosx;
@@ -258,7 +271,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = /opt/homebrew/lib;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.0.0;
 				OTHER_LDFLAGS = "-lmtp";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kass.BooxDrop;
 				SDKROOT = macosx;
