@@ -74,6 +74,8 @@ class ChatProvider extends ChangeNotifier {
       buf.writeln('- Be friendly, encouraging, and patient.');
       buf.writeln('- NEVER include violent, scary, sexual, or inappropriate content.');
       buf.writeln('- If asked about something inappropriate, gently redirect.');
+      buf.writeln('- When the user shares a drawing, react enthusiastically and describe what you see.');
+      buf.writeln('- You can use edit_image to enhance or modify their drawing if they ask.');
       buf.writeln();
     }
 
@@ -290,13 +292,23 @@ class ChatProvider extends ChangeNotifier {
   Future<void> sendMessage(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isLoading) return;
+    _log.info('chat', 'User: ${trimmed.length > 50 ? '${trimmed.substring(0, 50)}...' : trimmed}');
+    await _sendUserMessage(Message(role: 'user', content: trimmed));
+  }
 
+  Future<void> sendMessageWithImage(String text, String imagePath) async {
+    if (_isLoading) return;
+    _log.info('chat', 'User drawing: $imagePath');
+    await _sendUserMessage(
+        Message(role: 'user', content: text, imagePath: imagePath));
+  }
+
+  Future<void> _sendUserMessage(Message userMessage) async {
     if (_currentSessionId == null) {
       await createNewSession();
     }
 
-    _log.info('chat', 'User: ${trimmed.length > 50 ? '${trimmed.substring(0, 50)}...' : trimmed}');
-    _messages.add(Message(role: 'user', content: trimmed));
+    _messages.add(userMessage);
     _isLoading = true;
     _error = null;
     notifyListeners();

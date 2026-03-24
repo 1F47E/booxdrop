@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/message.dart';
@@ -230,17 +231,38 @@ class OpenAIService {
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
 
     // Build the conversation payload (mutable, grows with tool results).
-    // For assistant messages that have an associated image, annotate the
-    // content so the model knows what was previously generated and can
-    // handle follow-ups like "make it bigger" or "add a hat".
-    final conversation = messages.map((m) {
-      var content = m.content;
-      if (m.role == 'assistant' && m.imagePath != null) {
+    final conversation = <Map<String, dynamic>>[];
+    for (final m in messages) {
+      if (m.role == 'user' && m.imagePath != null) {
+        // Multimodal user message: text + image for GPT-4o vision
+        try {
+          final bytes = await File(m.imagePath!).readAsBytes();
+          final b64 = base64Encode(bytes);
+          conversation.add({
+            'role': 'user',
+            'content': [
+              {'type': 'text', 'text': m.content},
+              {
+                'type': 'image_url',
+                'image_url': {
+                  'url': 'data:image/png;base64,$b64',
+                  'detail': 'auto',
+                },
+              },
+            ],
+          });
+        } catch (_) {
+          // File missing — send text only
+          conversation.add({'role': m.role, 'content': m.content});
+        }
+      } else if (m.role == 'assistant' && m.imagePath != null) {
         final tag = '[An image was generated and displayed to the user]';
-        content = content.isEmpty ? tag : '$content\n$tag';
+        final content = m.content.isEmpty ? tag : '${m.content}\n$tag';
+        conversation.add({'role': m.role, 'content': content});
+      } else {
+        conversation.add({'role': m.role, 'content': m.content});
       }
-      return <String, dynamic>{'role': m.role, 'content': content};
-    }).toList();
+    }
 
     String? imagePath;
     String? audioPath;

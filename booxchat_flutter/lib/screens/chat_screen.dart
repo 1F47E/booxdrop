@@ -9,6 +9,7 @@ import '../models/message.dart';
 import '../providers/chat_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
+import 'drawing_pad_screen.dart';
 import 'settings_screen.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -210,6 +211,33 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: IconButton(
+                        icon: const Icon(Icons.brush, color: Colors.black),
+                        onPressed: provider.isLoading
+                            ? null
+                            : () async {
+                                final path = await Navigator.push<String>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const DrawingPadScreen(),
+                                  ),
+                                );
+                                if (path != null && mounted) {
+                                  final settings =
+                                      context.read<SettingsProvider>();
+                                  final msg = settings.kidsMode
+                                      ? 'Look what I drew!'
+                                      : 'Here\'s my drawing';
+                                  provider.sendMessageWithImage(msg, path);
+                                }
+                              },
+                        tooltip: 'Draw',
+                      ),
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _controller,
