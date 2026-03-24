@@ -1,73 +1,57 @@
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class SearchService {
+  static const _apiUrl = 'https://api.perplexity.ai/chat/completions';
+
   static Future<String> search(String query) async {
-    // Tier 1: DuckDuckGo Instant Answer API
-    try {
-      final instantUrl = Uri.parse(
-        'https://api.duckduckgo.com/?q=${Uri.encodeComponent(query)}&format=json&no_redirect=1',
-      );
-      final instantResp =
-          await http.get(instantUrl).timeout(const Duration(seconds: 10));
-
-      if (instantResp.statusCode == 200) {
-        final data = jsonDecode(instantResp.body) as Map<String, dynamic>;
-
-        // Check AbstractText first
-        final abstractText = (data['AbstractText'] ?? '') as String;
-        if (abstractText.isNotEmpty) return abstractText;
-
-        // Parse RelatedTopics for snippets
-        final related = data['RelatedTopics'] as List? ?? [];
-        final snippets = <String>[];
-        for (final topic in related) {
-          if (topic is Map<String, dynamic>) {
-            if (topic.containsKey('Text')) {
-              snippets.add(topic['Text'] as String);
-            } else if (topic.containsKey('Topics')) {
-              for (final sub in (topic['Topics'] as List)) {
-                if (sub is Map<String, dynamic> && sub.containsKey('Text')) {
-                  snippets.add(sub['Text'] as String);
-                }
-                if (snippets.length >= 6) break;
-              }
-            }
-          }
-          if (snippets.length >= 6) break;
-        }
-        if (snippets.isNotEmpty) return snippets.join('\n\n');
-      }
-    } catch (_) {
-      // Fall through to tier 2
+    final apiKey = dotenv.env['PERPLEXITY_API_KEY'] ?? '';
+    if (apiKey.isEmpty || apiKey == 'pplx-placeholder') {
+      return 'Search unavailable: Perplexity API key not configured.';
     }
 
-    // Tier 2: DuckDuckGo HTML search (scrape snippets)
     try {
-      final htmlUrl = Uri.parse(
-        'https://html.duckduckgo.com/html/?q=${Uri.encodeComponent(query)}',
-      );
-      final htmlResp = await http.get(htmlUrl, headers: {
-        'User-Agent': 'BooxChat/1.0',
-      }).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse(_apiUrl),
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'model': 'sonar',
+              'messages': [
+                {'role': 'user', 'content': query},
+              ],
+              'return_citations': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
 
-      if (htmlResp.statusCode == 200) {
-        final snippetPattern =
-            RegExp(r'class="result__snippet"[^>]*>(.*?)</(?:a|span)', dotAll: true);
-        final matches = snippetPattern.allMatches(htmlResp.body).take(5);
-        final results = matches
-            .map((m) =>
-                m.group(1)?.replaceAll(RegExp(r'<[^>]+>'), '').trim() ?? '')
-            .where((s) => s.isNotEmpty)
-            .toList();
-
-        if (results.isNotEmpty) return results.join('\n\n');
+      if (response.statusCode != 200) {
+        return 'Search failed (HTTP ${response.statusCode})';
       }
-    } catch (_) {
-      // Fall through
-    }
 
-    return 'No search results found for: $query';
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final choices = data['choices'] as List;
+      final content = choices.first['message']['content'] as String;
+
+      // Append citations if present
+      final citations = data['citations'] as List?;
+      if (citations != null && citations.isNotEmpty) {
+        final citationText = citations
+            .asMap()
+            .entries
+            .map((e) => '[${e.key + 1}] ${e.value}')
+            .join('\n');
+        return '$content\n\nSources:\n$citationText';
+      }
+
+      return content;
+    } catch (e) {
+      return 'Search failed: $e';
+    }
   }
 
   static Future<String> fetchPage(String url) async {
