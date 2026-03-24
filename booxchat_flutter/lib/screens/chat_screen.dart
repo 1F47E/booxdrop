@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/message.dart';
 import '../providers/chat_provider.dart';
+import '../services/eink_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -13,22 +14,38 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  ChatProvider? _chatProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set REGAL refresh mode once at startup (best for text on e-ink)
+    EinkService.setRegalMode();
+    // Listen for chat changes to scroll + refresh e-ink after each update
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _chatProvider = context.read<ChatProvider>();
+      _chatProvider!.addListener(_onChatChanged);
+    });
+  }
 
   @override
   void dispose() {
+    _chatProvider?.removeListener(_onChatChanged);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _onChatChanged() {
+    _scrollToBottom();
+    EinkService.requestFullRefresh();
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        // jumpTo instead of animateTo — animations cause ghosting on e-ink
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
@@ -38,16 +55,12 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.trim().isEmpty || provider.isLoading) return;
     _controller.clear();
     provider.sendMessage(text);
-    _scrollToBottom();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ChatProvider>(
       builder: (context, provider, _) {
-        // Scroll when new messages arrive
-        if (provider.messages.isNotEmpty) _scrollToBottom();
-
         return Scaffold(
           appBar: AppBar(
             title: const Text('BooxChat',
