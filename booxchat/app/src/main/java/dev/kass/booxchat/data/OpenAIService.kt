@@ -46,7 +46,7 @@ object OpenAIService {
      * Send the full conversation history and return the assistant's reply,
      * or throw an exception with a human-readable message on failure.
      */
-    suspend fun sendMessages(messages: List<Message>): String {
+    fun sendMessages(messages: List<Message>): String {
         val payload = ChatRequest(
             model = MODEL,
             messages = messages.map { ChatMessage(it.role, it.content) }
@@ -62,7 +62,7 @@ object OpenAIService {
             .post(body)
             .build()
 
-        // OkHttp blocking call — must be called from a background coroutine
+        // Blocking OkHttp call — caller must dispatch to IO thread (e.g. withContext(Dispatchers.IO))
         val response = client.newCall(request).execute()
         val responseBody = response.body?.string()
             ?: throw IllegalStateException("Empty response body")
