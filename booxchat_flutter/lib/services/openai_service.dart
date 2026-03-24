@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/message.dart';
+import '../providers/settings_provider.dart';
 import 'image_service.dart';
 import 'search_service.dart';
 import 'storage_service.dart';
@@ -59,7 +60,7 @@ class OpenAIService {
       'function': {
         'name': 'generate_image',
         'description':
-            'Generate an image based on a text prompt. Use when the user asks you to create, draw, generate, or make an image, picture, or illustration.',
+            'Generate a new image from a text description. Use when the user asks to create, draw, or make an image and there is no previous image to edit.',
         'parameters': {
           'type': 'object',
           'properties': {
@@ -67,13 +68,26 @@ class OpenAIService {
               'type': 'string',
               'description': 'Detailed description of the image to generate',
             },
-            'size': {
-              'type': 'string',
-              'enum': ['1024x1024', '1024x1536', '1536x1024'],
-              'description': 'Image dimensions. Default 1024x1024.',
-            },
           },
           'required': ['prompt'],
+        },
+      },
+    },
+    {
+      'type': 'function',
+      'function': {
+        'name': 'edit_image',
+        'description':
+            'Edit or modify a previously generated image. Use when the user wants to change, adjust, add to, or modify an existing image in the conversation.',
+        'parameters': {
+          'type': 'object',
+          'properties': {
+            'instruction': {
+              'type': 'string',
+              'description': 'What to change about the image',
+            },
+          },
+          'required': ['instruction'],
         },
       },
     },
@@ -106,16 +120,11 @@ class OpenAIService {
     }
   }
 
-  /// Legacy simple method — no tools.
-  static Future<String> sendMessages(List<Message> messages) async {
-    final resp = await sendWithTools(messages);
-    return resp.content;
-  }
-
   static const _toolLabels = {
     'web_search': '\ud83d\udd0d Searching the web...',
     'fetch_page': '\ud83d\udcc4 Reading a page...',
     'generate_image': '\ud83c\udfa8 Drawing an image...',
+    'edit_image': '\u270f\ufe0f Editing the image...',
   };
 
   static const _kidsSearchLabels = [
@@ -163,7 +172,7 @@ class OpenAIService {
     final list = switch (name) {
       'web_search' => _kidsSearchLabels,
       'fetch_page' => _kidsFetchLabels,
-      'generate_image' => _kidsImageLabels,
+      'generate_image' || 'edit_image' => _kidsImageLabels,
       _ => null,
     };
     if (list == null) return 'Doing something magical...';
@@ -174,6 +183,7 @@ class OpenAIService {
   /// final text response or the iteration limit is reached.
   static Future<ChatResponse> sendWithTools(
     List<Message> messages, {
+    required SettingsProvider settings,
     void Function(String status)? onToolCall,
     bool kidsMode = false,
   }) async {
@@ -193,6 +203,12 @@ class OpenAIService {
     }).toList();
 
     String? imagePath;
+    // Track the latest image path across tool iterations so edit_image
+    // can reference an image generated earlier in the same turn.
+    String? latestImagePath = messages.reversed
+        .where((m) => m.imagePath != null)
+        .map((m) => m.imagePath!)
+        .firstOrNull;
 
     for (var i = 0; i < _maxToolIterations; i++) {
       final body = <String, dynamic>{
@@ -249,16 +265,42 @@ class OpenAIService {
             case 'generate_image':
               try {
                 final imgPrompt = args['prompt'] as String;
-                final b64 = await ImageService.generateImage(
-                  prompt: imgPrompt,
-                  size: (args['size'] as String?) ?? '1024x1024',
-                );
+                final provider = ImageService.getProvider(settings);
+                final b64 = await provider.generate(prompt: imgPrompt);
                 final msgId = 'img_${DateTime.now().microsecondsSinceEpoch}';
                 imagePath = await StorageService.saveImage(b64, msgId);
+                latestImagePath = imagePath;
                 result =
                     'Image generated and displayed to the user. Prompt used: "$imgPrompt"';
               } catch (e) {
                 result = 'Image generation failed: $e';
+              }
+              break;
+            case 'edit_image':
+              try {
+                final provider = ImageService.getProvider(settings);
+                if (!provider.supportsEdit) {
+                  result =
+                      'Image editing is not supported with ${provider.name}. Use generate_image to create a new image instead.';
+                  break;
+                }
+                if (latestImagePath == null) {
+                  result =
+                      'No previous image found to edit. Use generate_image to create a new one.';
+                  break;
+                }
+                final instruction = args['instruction'] as String;
+                final b64 = await provider.edit(
+                  imagePath: latestImagePath,
+                  instruction: instruction,
+                );
+                final msgId = 'img_${DateTime.now().microsecondsSinceEpoch}';
+                imagePath = await StorageService.saveImage(b64, msgId);
+                latestImagePath = imagePath;
+                result =
+                    'Image edited and displayed to the user. Instruction: "$instruction"';
+              } catch (e) {
+                result = 'Image editing failed: $e';
               }
               break;
             default:

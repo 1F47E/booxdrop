@@ -78,17 +78,18 @@ class ChatProvider extends ChangeNotifier {
     buf.writeln('You have access to the following tools:');
     buf.writeln('- web_search: Search the web for current information.');
     buf.writeln('- fetch_page: Fetch and read the content of a specific URL.');
-    buf.writeln('- generate_image: Generate an image from a text description.');
+    buf.writeln('- generate_image: Generate a new image from a text description.');
+    buf.writeln('- edit_image: Edit or modify a previously generated image.');
     buf.writeln();
     buf.writeln('Guidelines:');
     buf.writeln('- Keep responses concise — the user is reading on an e-ink screen.');
     buf.writeln('- Use tools proactively when they would help answer the question.');
     buf.writeln('- Images will display in grayscale on the e-ink screen.');
-    buf.writeln('- When you generate an image, do NOT add any text commentary — '
-        'the image is shown directly to the user. Just generate it silently.');
-    buf.writeln('- You can see which images you previously generated in the conversation. '
-        'When the user asks to modify an image (e.g. "make it bigger", "add a hat", '
-        '"change the color"), use the previous prompt as a starting point and adjust it.');
+    buf.writeln('- You have two image tools: generate_image (create new) and edit_image (modify existing).');
+    buf.writeln('- Use edit_image when the user wants to change, adjust, or modify a previously generated image.');
+    buf.writeln('- Use generate_image only for brand new images with no prior image to edit.');
+    buf.writeln('- When generating or editing images, do NOT add any text commentary — '
+        'the image is shown directly to the user.');
     buf.writeln();
     buf.writeln('QUICK REPLIES: At the end of your response, optionally suggest up to 4 '
         'short follow-up replies the user might want to send next. Format them as a JSON '
@@ -282,6 +283,7 @@ class ChatProvider extends ChangeNotifier {
       final history = [_buildSystemPrompt(), ..._messages];
       final response = await OpenAIService.sendWithTools(
         history,
+        settings: _settings,
         kidsMode: _settings.kidsMode,
         onToolCall: (status) {
           _toolStatus = status;

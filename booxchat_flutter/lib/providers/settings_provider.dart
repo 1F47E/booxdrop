@@ -1,19 +1,54 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  static const imageProviderNames = {
+    'nano_banana': 'Nano Banana',
+    'openai': 'OpenAI',
+  };
+  static const nanoBananaModelNames = {
+    'gemini-3.1-flash-image-preview': 'Nano Banana 2',
+    'nano-banana-pro-preview': 'Nano Banana Pro',
+  };
+  static const nanoBananaModelPrices = {
+    'gemini-3.1-flash-image-preview': '~\$0.07/img',
+    'nano-banana-pro-preview': '~\$0.10/img',
+  };
+
+  static bool get hasGoogleKey =>
+      (dotenv.env['GOOGLE_AI_API_KEY'] ?? '').isNotEmpty;
+  static bool get hasOpenAIKey =>
+      (dotenv.env['OPENAI_API_KEY'] ?? '').isNotEmpty;
+
+  List<String> get availableImageProviders => [
+        if (hasGoogleKey) 'nano_banana',
+        if (hasOpenAIKey) 'openai',
+      ];
+
   static const _kKidsMode = 'settings_kids_mode';
   static const _kKidsAge = 'settings_kids_age';
   static const _kFontSize = 'settings_font_size';
+  static const _kImageProvider = 'settings_image_provider';
+  static const _kNanoBananaModel = 'settings_nano_banana_model';
 
   bool _kidsMode = false;
   int _kidsAge = 7;
   double _fontSize = 17; // default +2 from original 15
+  String _imageProvider = 'nano_banana';
+  String _nanoBananaModel = 'gemini-3.1-flash-image-preview';
 
   bool get kidsMode => _kidsMode;
   int get kidsAge => _kidsAge;
   double get fontSize => _kidsMode ? (_fontSize + 5) : _fontSize;
   double get rawFontSize => _fontSize;
+  String get imageProvider {
+    if (availableImageProviders.contains(_imageProvider)) return _imageProvider;
+    return availableImageProviders.isNotEmpty
+        ? availableImageProviders.first
+        : 'nano_banana';
+  }
+  String get nanoBananaModel => _nanoBananaModel;
 
   SettingsProvider() {
     _load();
@@ -24,6 +59,9 @@ class SettingsProvider extends ChangeNotifier {
     _kidsMode = prefs.getBool(_kKidsMode) ?? false;
     _kidsAge = prefs.getInt(_kKidsAge) ?? 7;
     _fontSize = prefs.getDouble(_kFontSize) ?? 17;
+    _imageProvider = prefs.getString(_kImageProvider) ?? 'nano_banana';
+    _nanoBananaModel = prefs.getString(_kNanoBananaModel) ??
+        'gemini-3.1-flash-image-preview';
     notifyListeners();
   }
 
@@ -46,5 +84,19 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_kFontSize, _fontSize);
+  }
+
+  Future<void> setImageProvider(String value) async {
+    _imageProvider = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kImageProvider, value);
+  }
+
+  Future<void> setNanoBananaModel(String model) async {
+    _nanoBananaModel = model;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kNanoBananaModel, model);
   }
 }

@@ -107,6 +107,88 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              if (settings.availableImageProviders.length > 1) ...[
+                const Divider(height: 1, color: Colors.black26),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: const Text(
+                    'Image Provider',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SegmentedButton<String>(
+                    segments: settings.availableImageProviders
+                        .map((p) => ButtonSegment(
+                              value: p,
+                              label: Text(
+                                  SettingsProvider.imageProviderNames[p] ?? p),
+                            ))
+                        .toList(),
+                    selected: {settings.imageProvider},
+                    onSelectionChanged: (v) {
+                      settings.setImageProvider(v.first);
+                      EinkService.requestFullRefresh();
+                    },
+                    style: ButtonStyle(
+                      foregroundColor:
+                          WidgetStatePropertyAll(Colors.black),
+                      backgroundColor:
+                          WidgetStateProperty.resolveWith((states) {
+                        return states.contains(WidgetState.selected)
+                            ? Colors.black12
+                            : Colors.transparent;
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+              if (settings.imageProvider == 'nano_banana') ...[
+                const Divider(height: 1, color: Colors.black26),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: const Text(
+                    'Model',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SegmentedButton<String>(
+                    segments:
+                        SettingsProvider.nanoBananaModelNames.entries
+                            .map((e) => ButtonSegment(
+                                  value: e.key,
+                                  label: Text(
+                                    '${e.value} ${SettingsProvider.nanoBananaModelPrices[e.key]}',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ))
+                            .toList(),
+                    selected: {settings.nanoBananaModel},
+                    onSelectionChanged: (v) {
+                      settings.setNanoBananaModel(v.first);
+                      EinkService.requestFullRefresh();
+                    },
+                    style: ButtonStyle(
+                      foregroundColor:
+                          WidgetStatePropertyAll(Colors.black),
+                      backgroundColor:
+                          WidgetStateProperty.resolveWith((states) {
+                        return states.contains(WidgetState.selected)
+                            ? Colors.black12
+                            : Colors.transparent;
+                      }),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               const Divider(height: 1, color: Colors.black26),
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Colors.black),
