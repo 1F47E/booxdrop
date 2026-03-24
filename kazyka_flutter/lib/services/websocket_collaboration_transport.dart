@@ -27,7 +27,14 @@ class WebSocketCollaborationTransport implements CollaborationTransport {
         try {
           final json = jsonDecode(data as String) as Map<String, dynamic>;
           if (!_controller.isClosed) _controller.add(json);
-        } catch (_) {}
+        } catch (e) {
+          if (!_controller.isClosed) {
+            _controller.add({
+              'type': 'error',
+              'payload': {'message': 'Parse error: $e'},
+            });
+          }
+        }
       },
       onDone: () {
         _connected = false;
@@ -53,7 +60,11 @@ class WebSocketCollaborationTransport implements CollaborationTransport {
   @override
   void send(Map<String, dynamic> message) {
     if (!_connected || _channel == null) return;
-    _channel!.sink.add(jsonEncode(message));
+    try {
+      _channel!.sink.add(jsonEncode(message));
+    } catch (_) {
+      _connected = false;
+    }
   }
 
   @override
