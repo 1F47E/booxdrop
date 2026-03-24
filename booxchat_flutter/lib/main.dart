@@ -15,6 +15,21 @@ Future<void> main() async {
   );
 }
 
+/// No-op page transition for e-ink: just shows the child, no animation.
+class _NoTransitionBuilder extends PageTransitionsBuilder {
+  const _NoTransitionBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) =>
+      child;
+}
+
 class BooxChatApp extends StatelessWidget {
   const BooxChatApp({super.key});
 
@@ -32,8 +47,8 @@ class BooxChatApp extends StatelessWidget {
         // E-ink: disable page transition animations
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: NoTransitionPageTransitionsBuilder(),
-            TargetPlatform.iOS: NoTransitionPageTransitionsBuilder(),
+            TargetPlatform.android: _NoTransitionBuilder(),
+            TargetPlatform.iOS: _NoTransitionBuilder(),
           },
         ),
       ),

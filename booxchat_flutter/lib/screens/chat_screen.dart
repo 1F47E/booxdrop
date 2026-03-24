@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/message.dart';
@@ -5,7 +6,8 @@ import '../providers/chat_provider.dart';
 import '../services/eink_service.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String? sessionId;
+  const ChatScreen({super.key, this.sessionId});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -19,12 +21,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Set REGAL refresh mode once at startup (best for text on e-ink)
     EinkService.setRegalMode();
-    // Listen for chat changes to scroll + refresh e-ink after each update
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _chatProvider = context.read<ChatProvider>();
       _chatProvider!.addListener(_onChatChanged);
+      if (widget.sessionId != null) {
+        _chatProvider!.loadSession(widget.sessionId!);
+      }
     });
   }
 
@@ -44,7 +47,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        // jumpTo instead of animateTo — animations cause ghosting on e-ink
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
@@ -63,8 +65,11 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context, provider, _) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('BooxChat',
-                style: TextStyle(fontSize: 18, color: Colors.white)),
+            title: Text(
+              provider.currentSession?.title ?? 'BooxChat',
+              style: const TextStyle(fontSize: 18, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+            ),
             backgroundColor: Colors.black,
             actions: [
               IconButton(
@@ -76,12 +81,31 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           body: Column(
             children: [
+              // Offline banner
+              if (!provider.isOnline)
+                Container(
+                  color: const Color(0xFFFFF3CD),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.wifi_off, size: 16, color: Color(0xFF856404)),
+                      SizedBox(width: 8),
+                      Text(
+                        'No internet connection',
+                        style:
+                            TextStyle(color: Color(0xFF856404), fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Message list
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   itemCount: provider.messages.length +
                       (provider.isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
@@ -90,8 +114,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: _MessageBubble(
-                          message: provider.messages[index]),
+                      child:
+                          _MessageBubble(message: provider.messages[index]),
                     );
                   },
                 ),
@@ -101,8 +125,8 @@ class _ChatScreenState extends State<ChatScreen> {
               if (provider.error != null)
                 Container(
                   color: const Color(0xFFFFEEEE),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
                       Expanded(
@@ -115,8 +139,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       TextButton(
                         onPressed: provider.dismissError,
                         child: const Text('Dismiss',
-                            style:
-                                TextStyle(color: Color(0xFF880000))),
+                            style: TextStyle(color: Color(0xFF880000))),
                       ),
                     ],
                   ),
@@ -136,7 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         maxLines: 5,
                         minLines: 1,
                         decoration: InputDecoration(
-                          hintText: 'Message…',
+                          hintText: 'Message\u2026',
                           border: OutlineInputBorder(
                             borderSide:
                                 const BorderSide(color: Colors.black),
@@ -213,14 +236,34 @@ class _MessageBubble extends StatelessWidget {
                   bottomRight: Radius.circular(12),
                 ),
               ),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          message.content,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.black,
-            fontSize: 15,
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (message.content.isNotEmpty)
+              Text(
+                message.content,
+                style: TextStyle(
+                  color: isUser ? Colors.white : Colors.black,
+                  fontSize: 15,
+                ),
+              ),
+            if (message.imagePath != null) ...[
+              if (message.content.isNotEmpty) const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(message.imagePath!),
+                  width: 256,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Text(
+                    '[Image not found]',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -242,8 +285,7 @@ class _LoadingBubble extends StatelessWidget {
             bottomRight: Radius.circular(12),
           ),
         ),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: const Text(
           '...',
           style: TextStyle(color: Colors.black, fontSize: 20),

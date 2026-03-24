@@ -2,39 +2,188 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/message.dart';
+import 'image_service.dart';
+import 'search_service.dart';
+import 'storage_service.dart';
+
+class ChatResponse {
+  final String content;
+  final String? imagePath;
+  ChatResponse({required this.content, this.imagePath});
+}
 
 class OpenAIService {
   static const _apiUrl = 'https://api.openai.com/v1/chat/completions';
-  static const model = 'gpt-4o';
+  static const _model = 'gpt-4o';
+  static const _maxToolIterations = 5;
 
+  static const _tools = [
+    {
+      'type': 'function',
+      'function': {
+        'name': 'web_search',
+        'description':
+            'Search the web for current information. Use when asked about recent events, facts you are unsure about, or when the user explicitly asks to search.',
+        'parameters': {
+          'type': 'object',
+          'properties': {
+            'query': {
+              'type': 'string',
+              'description': 'The search query',
+            },
+          },
+          'required': ['query'],
+        },
+      },
+    },
+    {
+      'type': 'function',
+      'function': {
+        'name': 'fetch_page',
+        'description':
+            'Fetch and read the content of a specific URL. Use when the user provides a URL or when you need detailed information from a search result.',
+        'parameters': {
+          'type': 'object',
+          'properties': {
+            'url': {
+              'type': 'string',
+              'description': 'The URL to fetch',
+            },
+          },
+          'required': ['url'],
+        },
+      },
+    },
+    {
+      'type': 'function',
+      'function': {
+        'name': 'generate_image',
+        'description':
+            'Generate an image based on a text prompt. Use when the user asks you to create, draw, generate, or make an image, picture, or illustration.',
+        'parameters': {
+          'type': 'object',
+          'properties': {
+            'prompt': {
+              'type': 'string',
+              'description': 'Detailed description of the image to generate',
+            },
+            'size': {
+              'type': 'string',
+              'enum': ['1024x1024', '1024x1536', '1536x1024'],
+              'description': 'Image dimensions. Default 1024x1024.',
+            },
+          },
+          'required': ['prompt'],
+        },
+      },
+    },
+  ];
+
+  /// Legacy simple method — no tools.
   static Future<String> sendMessages(List<Message> messages) async {
+    final resp = await sendWithTools(messages);
+    return resp.content;
+  }
+
+  /// Sends messages with tool support. Loops until the model produces a
+  /// final text response or the iteration limit is reached.
+  static Future<ChatResponse> sendWithTools(List<Message> messages) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
 
-    final response = await http
-        .post(
-          Uri.parse(_apiUrl),
-          headers: {
-            'Authorization': 'Bearer $apiKey',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'model': model,
-            'messages': messages
-                .map((m) => {'role': m.role, 'content': m.content})
-                .toList(),
-            'temperature': 0.7,
-          }),
-        )
-        .timeout(const Duration(seconds: 60));
+    // Build the conversation payload (mutable, grows with tool results)
+    final conversation = messages
+        .map((m) => <String, dynamic>{'role': m.role, 'content': m.content})
+        .toList();
 
-    if (response.statusCode != 200) {
-      throw Exception(
-          'OpenAI error ${response.statusCode}: ${response.body}');
+    String? imagePath;
+
+    for (var i = 0; i < _maxToolIterations; i++) {
+      final body = <String, dynamic>{
+        'model': _model,
+        'messages': conversation,
+        'temperature': 0.7,
+        'tools': _tools,
+      };
+      // NOTE: no 'response_format' — incompatible with tools (Bug 2)
+
+      final response = await http
+          .post(
+            Uri.parse(_apiUrl),
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 60));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'OpenAI error ${response.statusCode}: ${response.body}');
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final choice = (data['choices'] as List).first as Map<String, dynamic>;
+      final finishReason = choice['finish_reason'] as String;
+      final msg = choice['message'] as Map<String, dynamic>;
+
+      if (finishReason == 'tool_calls') {
+        // Append the assistant message (with tool_calls) to conversation
+        conversation.add(msg);
+
+        final toolCalls = msg['tool_calls'] as List;
+        for (final tc in toolCalls) {
+          final fn = tc['function'] as Map<String, dynamic>;
+          final name = fn['name'] as String;
+          final args =
+              jsonDecode(fn['arguments'] as String) as Map<String, dynamic>;
+          final callId = tc['id'] as String;
+
+          String result;
+
+          switch (name) {
+            case 'web_search':
+              result = await SearchService.search(args['query'] as String);
+              break;
+            case 'fetch_page':
+              result = await SearchService.fetchPage(args['url'] as String);
+              break;
+            case 'generate_image':
+              try {
+                final b64 = await ImageService.generateImage(
+                  prompt: args['prompt'] as String,
+                  size: (args['size'] as String?) ?? '1024x1024',
+                );
+                final msgId = 'img_${DateTime.now().microsecondsSinceEpoch}';
+                imagePath = await StorageService.saveImage(b64, msgId);
+                result = 'Image generated successfully.';
+              } catch (e) {
+                result = 'Image generation failed: $e';
+              }
+              break;
+            default:
+              result = 'Unknown tool: $name';
+          }
+
+          conversation.add({
+            'role': 'tool',
+            'tool_call_id': callId,
+            'content': result,
+          });
+        }
+        // Loop to send tool results back to the model
+        continue;
+      }
+
+      // finish_reason == 'stop' (or 'length') — return text
+      final content = (msg['content'] as String?) ?? '';
+      return ChatResponse(content: content.trim(), imagePath: imagePath);
     }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final content =
-        (data['choices'] as List).first['message']['content'] as String;
-    return content.trim();
+    // Safety: max iterations reached
+    return ChatResponse(
+      content: 'I ran into a problem processing tool calls. Please try again.',
+      imagePath: imagePath,
+    );
   }
 }
