@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/message.dart';
 import '../providers/chat_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
+import 'settings_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? sessionId;
@@ -73,6 +75,17 @@ class _ChatScreenState extends State<ChatScreen> {
             backgroundColor: Colors.black,
             actions: [
               IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SettingsScreen()),
+                  );
+                },
+                tooltip: 'Settings',
+              ),
+              IconButton(
                 icon: const Icon(Icons.delete, color: Colors.white),
                 onPressed: provider.clearConversation,
                 tooltip: 'Clear conversation',
@@ -83,21 +96,16 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               // Offline banner
               if (!provider.isOnline)
-                Container(
-                  color: const Color(0xFFFFF3CD),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.wifi_off, size: 16, color: Color(0xFF856404)),
-                      SizedBox(width: 8),
-                      Text(
-                        'No internet connection',
-                        style:
-                            TextStyle(color: Color(0xFF856404), fontSize: 13),
-                      ),
-                    ],
-                  ),
+                _WarningBanner(
+                  icon: Icons.wifi_off,
+                  text: 'No internet connection',
+                ),
+
+              // API key warning banner
+              if (provider.apiKeyWarning != null)
+                _WarningBanner(
+                  icon: Icons.warning_amber,
+                  text: provider.apiKeyWarning!,
                 ),
 
               // Message list
@@ -124,7 +132,9 @@ class _ChatScreenState extends State<ChatScreen> {
               // Error banner
               if (provider.error != null)
                 Container(
-                  color: const Color(0xFFFFEEEE),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.black)),
+                  ),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
@@ -133,13 +143,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Text(
                           'Error: ${provider.error}',
                           style: const TextStyle(
-                              color: Color(0xFF880000), fontSize: 13),
+                              color: Colors.black, fontSize: 13),
                         ),
                       ),
                       TextButton(
                         onPressed: provider.dismissError,
                         child: const Text('Dismiss',
-                            style: TextStyle(color: Color(0xFF880000))),
+                            style: TextStyle(color: Colors.black)),
                       ),
                     ],
                   ),
@@ -205,6 +215,37 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+class _WarningBanner extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _WarningBanner({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.black)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.black),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MessageBubble extends StatelessWidget {
   final Message message;
   const _MessageBubble({required this.message});
@@ -212,6 +253,8 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
+    final settings = context.watch<SettingsProvider>();
+    final fontSize = settings.kidsMode ? 20.0 : 15.0;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -245,7 +288,7 @@ class _MessageBubble extends StatelessWidget {
                 message.content,
                 style: TextStyle(
                   color: isUser ? Colors.white : Colors.black,
-                  fontSize: 15,
+                  fontSize: fontSize,
                 ),
               ),
             if (message.imagePath != null) ...[
