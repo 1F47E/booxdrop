@@ -6,7 +6,7 @@ class StorageService {
   static Directory? _imageDir;
 
   static Future<Directory> get imageDirectory async {
-    if (_imageDir != null) return _imageDir!;
+    if (_imageDir != null && await _imageDir!.exists()) return _imageDir!;
     final appDir = await getApplicationDocumentsDirectory();
     _imageDir = Directory('${appDir.path}/images');
     if (!await _imageDir!.exists()) {

@@ -79,6 +79,33 @@ class OpenAIService {
     },
   ];
 
+  /// Checks if the OpenAI API key is valid.
+  /// Returns null if valid, or a warning message if not.
+  static Future<String?> validateApiKey() async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+    if (apiKey.isEmpty || apiKey == 'sk-placeholder') {
+      return 'OpenAI API key not configured';
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.openai.com/v1/models'),
+        headers: {'Authorization': 'Bearer $apiKey'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 401) {
+        return 'OpenAI API key is invalid';
+      }
+      if (response.statusCode != 200) {
+        return 'OpenAI API check failed (HTTP ${response.statusCode})';
+      }
+      return null;
+    } catch (_) {
+      // Network error — don't warn about key, offline banner handles connectivity
+      return null;
+    }
+  }
+
   /// Legacy simple method — no tools.
   static Future<String> sendMessages(List<Message> messages) async {
     final resp = await sendWithTools(messages);

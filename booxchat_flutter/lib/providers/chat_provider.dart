@@ -7,8 +7,10 @@ import '../models/session.dart';
 import '../services/openai_service.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
+import 'settings_provider.dart';
 
 class ChatProvider extends ChangeNotifier {
+  final SettingsProvider _settings;
   final List<Message> _messages = [];
   bool _isLoading = false;
   String? _error;
@@ -18,20 +20,7 @@ class ChatProvider extends ChangeNotifier {
   Timer? _saveTimer;
   final ConnectivityService _connectivity = ConnectivityService();
   bool _isOnline = true;
-
-  static final _systemPrompt = Message(
-    role: 'system',
-    content: 'You are a helpful assistant on a Boox e-ink tablet device.\n\n'
-        'You have access to the following tools:\n'
-        '- web_search: Search the web for current information. Use when asked about recent events, facts you\'re unsure about, or when the user explicitly asks to search.\n'
-        '- fetch_page: Fetch and read the content of a specific URL. Use when the user provides a URL or when you need detailed information from a search result.\n'
-        '- generate_image: Generate an image from a text description using AI. Use when the user asks you to create, draw, generate, or make any kind of image, picture, or illustration.\n\n'
-        'Guidelines:\n'
-        '- Keep responses concise — the user is reading on an e-ink screen with limited refresh rate.\n'
-        '- Use tools proactively when they would help answer the user\'s question.\n'
-        '- When generating images, note they will display in grayscale on the e-ink screen.\n'
-        '- When you cannot answer from memory, search the web rather than guessing.',
-  );
+  String? _apiKeyWarning;
 
   List<Message> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
@@ -40,13 +29,69 @@ class ChatProvider extends ChangeNotifier {
   Session? get currentSession => _currentSession;
   List<Session> get sessions => List.unmodifiable(_sessions);
   bool get isOnline => _isOnline;
+  String? get apiKeyWarning => _apiKeyWarning;
 
-  ChatProvider() {
+  ChatProvider(this._settings) {
+    _connectivity.checkNow().then((online) {
+      _isOnline = online;
+      notifyListeners();
+    });
     _connectivity.startListening((online) {
       _isOnline = online;
       notifyListeners();
     });
     _loadSessions();
+    _validateApiKey();
+  }
+
+  Message _buildSystemPrompt() {
+    final buf = StringBuffer();
+    buf.writeln('You are a helpful assistant on a Boox e-ink tablet device.');
+    buf.writeln();
+
+    // Language mirroring (always active)
+    buf.writeln('IMPORTANT: Always respond in the same language the user writes in. '
+        'If the user writes in Spanish, respond in Spanish. '
+        'If they write in Russian, respond in Russian. And so on.');
+    buf.writeln();
+
+    if (_settings.kidsMode) {
+      final age = _settings.kidsAge;
+      buf.writeln('The user is a child aged $age. Adjust your responses:');
+      buf.writeln('- Use simple vocabulary appropriate for a $age-year-old.');
+      if (age <= 6) {
+        buf.writeln('- Keep answers very short: 1-3 sentences.');
+        buf.writeln('- Use lots of emojis to make it fun and engaging.');
+      } else {
+        buf.writeln('- Keep answers short: 3-6 sentences.');
+        buf.writeln('- Use emojis to make responses friendly.');
+      }
+      buf.writeln('- Be friendly, encouraging, and patient.');
+      buf.writeln('- NEVER include violent, scary, sexual, or inappropriate content.');
+      buf.writeln('- If asked about something inappropriate, gently redirect.');
+      buf.writeln();
+    }
+
+    // Tool descriptions
+    buf.writeln('You have access to the following tools:');
+    buf.writeln('- web_search: Search the web for current information.');
+    buf.writeln('- fetch_page: Fetch and read the content of a specific URL.');
+    buf.writeln('- generate_image: Generate an image from a text description.');
+    buf.writeln();
+    buf.writeln('Guidelines:');
+    buf.writeln('- Keep responses concise — the user is reading on an e-ink screen.');
+    buf.writeln('- Use tools proactively when they would help answer the question.');
+    buf.writeln('- Images will display in grayscale on the e-ink screen.');
+
+    return Message(role: 'system', content: buf.toString());
+  }
+
+  Future<void> _validateApiKey() async {
+    final warning = await OpenAIService.validateApiKey();
+    if (warning != null) {
+      _apiKeyWarning = warning;
+      notifyListeners();
+    }
   }
 
   Future<void> _loadSessions() async {
@@ -77,14 +122,14 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> loadSession(String sessionId) async {
-    // Save current session before switching
     _saveTimer?.cancel();
     if (_currentSessionId != null) {
       await _persistSession();
     }
 
     _currentSessionId = sessionId;
-    _currentSession = _sessions.firstWhere((s) => s.id == sessionId);
+    _currentSession = _sessions.where((s) => s.id == sessionId).firstOrNull;
+    if (_currentSession == null) return;
     _messages.clear();
     _error = null;
 
@@ -101,7 +146,6 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> deleteSession(String sessionId) async {
-    // Delete image files for this session
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString('session_$sessionId');
     if (json != null) {
@@ -138,12 +182,11 @@ class ChatProvider extends ChangeNotifier {
     });
     await prefs.setString('session_$_currentSessionId', data);
 
-    // Update session metadata
     if (_currentSession != null) {
       _currentSession!.updatedAt = DateTime.now();
-      // Auto-title from first user message
       if (_currentSession!.title == 'New Chat' && _messages.isNotEmpty) {
-        final firstUserMsg = _messages.where((m) => m.role == 'user').firstOrNull;
+        final firstUserMsg =
+            _messages.where((m) => m.role == 'user').firstOrNull;
         if (firstUserMsg != null) {
           final title = firstUserMsg.content;
           _currentSession!.title =
@@ -158,7 +201,6 @@ class ChatProvider extends ChangeNotifier {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isLoading) return;
 
-    // Auto-create session if none active
     if (_currentSessionId == null) {
       await createNewSession();
     }
@@ -169,7 +211,7 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final history = [_systemPrompt, ..._messages];
+      final history = [_buildSystemPrompt(), ..._messages];
       final response = await OpenAIService.sendWithTools(history);
       _messages.add(Message(
         role: 'assistant',
@@ -186,7 +228,6 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void clearConversation() {
-    // Delete image files
     for (final msg in _messages) {
       if (msg.imagePath != null) {
         StorageService.deleteImage(msg.imagePath!);

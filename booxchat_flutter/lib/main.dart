@@ -2,14 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/chat_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+
+  final settingsProvider = SettingsProvider();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ChatProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: settingsProvider),
+        ChangeNotifierProvider(
+          create: (_) => ChatProvider(settingsProvider),
+        ),
+      ],
       child: const BooxChatApp(),
     ),
   );
