@@ -54,6 +54,29 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _confirmDeleteChat(BuildContext context, ChatProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete chat?'),
+        content: const Text('This will permanently delete this conversation.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.black)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              provider.deleteSession(provider.currentSessionId!);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _send(ChatProvider provider) {
     final text = _controller.text;
     if (text.trim().isEmpty || provider.isLoading) return;
@@ -87,8 +110,10 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.white),
-                onPressed: provider.clearConversation,
-                tooltip: 'Clear conversation',
+                onPressed: provider.currentSessionId == null
+                    ? null
+                    : () => _confirmDeleteChat(context, provider),
+                tooltip: 'Delete chat',
               ),
             ],
           ),
