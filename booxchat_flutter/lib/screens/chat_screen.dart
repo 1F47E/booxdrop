@@ -176,18 +176,6 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
               ),
 
-              // TTS generation status (shown after text is already visible)
-              if (provider.toolStatus != null && !provider.isLoading)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Text(
-                    provider.toolStatus!,
-                    style: const TextStyle(
-                        color: Colors.black54, fontSize: 13),
-                  ),
-                ),
-
               // Error banner
               if (provider.error != null)
                 Container(

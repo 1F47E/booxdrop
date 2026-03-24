@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'log_service.dart';
+
+final _log = LogService.instance;
 
 class SearchService {
   static const _apiUrl = 'https://api.perplexity.ai/chat/completions';
@@ -11,6 +14,7 @@ class SearchService {
       return 'Search unavailable: Perplexity API key not configured.';
     }
 
+    _log.info('search', 'Searching: $query');
     try {
       final response = await http
           .post(
@@ -30,12 +34,14 @@ class SearchService {
           .timeout(const Duration(seconds: 20));
 
       if (response.statusCode != 200) {
+        _log.warn('search', 'HTTP ${response.statusCode}');
         return 'Search failed (HTTP ${response.statusCode})';
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final choices = data['choices'] as List;
       final content = choices.first['message']['content'] as String;
+      _log.debug('search', 'Result: ${content.length} chars');
 
       // Append citations if present
       final citations = data['citations'] as List?;
@@ -50,11 +56,13 @@ class SearchService {
 
       return content;
     } catch (e) {
+      _log.error('search', 'Search failed: $e');
       return 'Search failed: $e';
     }
   }
 
   static Future<String> fetchPage(String url) async {
+    _log.info('search', 'Fetching: $url');
     try {
       final uri = Uri.parse(url);
       final resp = await http.get(uri, headers: {
@@ -62,6 +70,7 @@ class SearchService {
       }).timeout(const Duration(seconds: 15));
 
       if (resp.statusCode != 200) {
+        _log.warn('search', 'Fetch HTTP ${resp.statusCode}');
         return 'Failed to fetch page: HTTP ${resp.statusCode}';
       }
 
@@ -79,6 +88,7 @@ class SearchService {
       }
       return text;
     } catch (e) {
+      _log.error('search', 'Fetch failed: $e');
       return 'Failed to fetch page: $e';
     }
   }

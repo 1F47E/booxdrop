@@ -6,24 +6,13 @@ import '../models/message.dart';
 import '../models/session.dart';
 import '../services/openai_service.dart';
 import '../services/storage_service.dart';
-import '../services/tts_service.dart';
 import '../services/connectivity_service.dart';
+import '../services/log_service.dart';
 import 'settings_provider.dart';
 
-class ChatProvider extends ChangeNotifier {
-  static const _kidsTtsLabels = [
-    'The robot is learning to speak...',
-    'Warming up the voice box...',
-    'The parrot is rehearsing...',
-    'Practicing in the mirror...',
-    'Tuning the magic microphone...',
-    'The storyteller is getting ready...',
-    'Clearing the dragon\'s throat...',
-    'Charging the voice crystals...',
-    'The wizard is composing...',
-    'Polishing the words...',
-  ];
+final _log = LogService.instance;
 
+class ChatProvider extends ChangeNotifier {
   final SettingsProvider _settings;
   final List<Message> _messages = [];
   bool _isLoading = false;
@@ -94,6 +83,11 @@ class ChatProvider extends ChangeNotifier {
     buf.writeln('- fetch_page: Fetch and read the content of a specific URL.');
     buf.writeln('- generate_image: Generate a new image from a text description.');
     buf.writeln('- edit_image: Edit or modify a previously generated image.');
+    if (_settings.availableTtsProviders.isNotEmpty) {
+      buf.writeln('- text_to_speech: Convert text to speech audio. Use when the user '
+          'asks to hear something aloud, narrate, or wants voice output. '
+          'Keep text under 500 characters (~1 minute). For longer content, summarize or ask to continue.');
+    }
     buf.writeln();
     buf.writeln('Guidelines:');
     buf.writeln('- Keep responses concise — the user is reading on an e-ink screen.');
@@ -104,6 +98,10 @@ class ChatProvider extends ChangeNotifier {
     buf.writeln('- Use generate_image only for brand new images with no prior image to edit.');
     buf.writeln('- When generating or editing images, do NOT add any text commentary — '
         'the image is shown directly to the user.');
+    if (_settings.availableTtsProviders.isNotEmpty) {
+      buf.writeln('- When using text_to_speech, write natural spoken prose — no bullet points or markdown.');
+      buf.writeln('- After text_to_speech, do NOT repeat the spoken text. Just acknowledge briefly.');
+    }
     buf.writeln();
     buf.writeln('QUICK REPLIES: At the end of your response, optionally suggest up to 4 '
         'short follow-up replies the user might want to send next. Format them as a JSON '
@@ -291,6 +289,7 @@ class ChatProvider extends ChangeNotifier {
       await createNewSession();
     }
 
+    _log.info('chat', 'User: ${trimmed.length > 50 ? '${trimmed.substring(0, 50)}...' : trimmed}');
     _messages.add(Message(role: 'user', content: trimmed));
     _isLoading = true;
     _error = null;
@@ -308,49 +307,18 @@ class ChatProvider extends ChangeNotifier {
         },
       );
       final parsed = _parseQuickReplies(response.content);
-      final msg = Message(
+      _messages.add(Message(
         role: 'assistant',
         content: parsed.content,
         imagePath: response.imagePath,
+        audioPath: response.audioPath,
         quickReplies: parsed.quickReplies,
-      );
-      _messages.add(msg);
-      _isLoading = false;
-      _toolStatus = null;
-      notifyListeners();
+      ));
       _scheduleSave();
-
-      // Generate TTS audio (non-blocking — text is already visible)
-      if (parsed.content.isNotEmpty &&
-          _settings.availableTtsProviders.isNotEmpty) {
-        try {
-          _toolStatus = _settings.kidsMode
-              ? _kidsTtsLabels[
-                  DateTime.now().microsecond % _kidsTtsLabels.length]
-              : '\u{1f50a} Generating audio...';
-          notifyListeners();
-
-          final ttsProvider = TtsService.getProvider(_settings);
-          final bytes = await ttsProvider.speak(
-            text: parsed.content,
-            voice: _settings.ttsVoice,
-          );
-          final audioPath =
-              await StorageService.saveAudio(bytes, msg.id);
-          final idx = _messages.indexOf(msg);
-          if (idx >= 0) {
-            _messages[idx] = msg.copyWith(audioPath: audioPath);
-            _scheduleSave();
-          }
-        } catch (_) {
-          // TTS failure is non-critical — text is already shown
-        } finally {
-          _toolStatus = null;
-          notifyListeners();
-        }
-      }
     } catch (e) {
+      _log.error('chat', 'Error: $e');
       _error = e.toString().replaceFirst('Exception: ', '');
+    } finally {
       _isLoading = false;
       _toolStatus = null;
       notifyListeners();

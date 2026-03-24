@@ -4,13 +4,18 @@ import 'package:http/http.dart' as http;
 import '../models/message.dart';
 import '../providers/settings_provider.dart';
 import 'image_service.dart';
+import 'log_service.dart';
 import 'search_service.dart';
 import 'storage_service.dart';
+import 'tts_service.dart';
+
+final _log = LogService.instance;
 
 class ChatResponse {
   final String content;
   final String? imagePath;
-  ChatResponse({required this.content, this.imagePath});
+  final String? audioPath;
+  ChatResponse({required this.content, this.imagePath, this.audioPath});
 }
 
 class OpenAIService {
@@ -93,6 +98,26 @@ class OpenAIService {
     },
   ];
 
+  static const _ttsTool = {
+    'type': 'function',
+    'function': {
+      'name': 'text_to_speech',
+      'description':
+          'Convert text to speech audio. Use when the user asks to hear, read aloud, narrate, tell a story out loud, or wants audio/voice output. Keep text under 500 characters (~1 minute of speech) to control costs. For longer content, summarize or break into parts.',
+      'parameters': {
+        'type': 'object',
+        'properties': {
+          'text': {
+            'type': 'string',
+            'description':
+                'The text to convert to speech. Write naturally as spoken prose — no bullet points, markdown, or formatting. Max ~500 characters.',
+          },
+        },
+        'required': ['text'],
+      },
+    },
+  };
+
   /// Checks if the OpenAI API key is valid.
   /// Returns null if valid, or a warning message if not.
   static Future<String?> validateApiKey() async {
@@ -125,6 +150,7 @@ class OpenAIService {
     'fetch_page': '\ud83d\udcc4 Reading a page...',
     'generate_image': '\ud83c\udfa8 Drawing an image...',
     'edit_image': '\u270f\ufe0f Editing the image...',
+    'text_to_speech': '\ud83d\udd0a Generating audio...',
   };
 
   static const _kidsSearchLabels = [
@@ -153,6 +179,19 @@ class OpenAIService {
     'Scanning the robot\'s memory...',
   ];
 
+  static const _kidsTtsLabels = [
+    'The robot is learning to speak...',
+    'Warming up the voice box...',
+    'The parrot is rehearsing...',
+    'Tuning the magic microphone...',
+    'The storyteller is getting ready...',
+    'Clearing the dragon\'s throat...',
+    'Charging the voice crystals...',
+    'The wizard is composing...',
+    'Polishing the words...',
+    'Practicing in the mirror...',
+  ];
+
   static const _kidsImageLabels = [
     'Painting with rainbow brushes...',
     'The art hamster is drawing...',
@@ -173,6 +212,7 @@ class OpenAIService {
       'web_search' => _kidsSearchLabels,
       'fetch_page' => _kidsFetchLabels,
       'generate_image' || 'edit_image' => _kidsImageLabels,
+      'text_to_speech' => _kidsTtsLabels,
       _ => null,
     };
     if (list == null) return 'Doing something magical...';
@@ -203,6 +243,7 @@ class OpenAIService {
     }).toList();
 
     String? imagePath;
+    String? audioPath;
     // Track the latest image path across tool iterations so edit_image
     // can reference an image generated earlier in the same turn.
     String? latestImagePath = messages.reversed
@@ -211,14 +252,19 @@ class OpenAIService {
         .firstOrNull;
 
     for (var i = 0; i < _maxToolIterations; i++) {
+      final tools = [
+        ..._tools,
+        if (settings.availableTtsProviders.isNotEmpty) _ttsTool,
+      ];
       final body = <String, dynamic>{
         'model': _model,
         'messages': conversation,
         'temperature': 0.7,
-        'tools': _tools,
+        'tools': tools,
       };
-      // NOTE: no 'response_format' — incompatible with tools (Bug 2)
 
+      _log.info('chat', 'Sending ${conversation.length} msgs to GPT-4o');
+      final sw = Stopwatch()..start();
       final response = await http
           .post(
             Uri.parse(_apiUrl),
@@ -229,8 +275,10 @@ class OpenAIService {
             body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 60));
+      sw.stop();
 
       if (response.statusCode != 200) {
+        _log.error('chat', 'GPT-4o HTTP ${response.statusCode}');
         throw Exception(
             'OpenAI error ${response.statusCode}: ${response.body}');
       }
@@ -239,6 +287,7 @@ class OpenAIService {
       final choice = (data['choices'] as List).first as Map<String, dynamic>;
       final finishReason = choice['finish_reason'] as String;
       final msg = choice['message'] as Map<String, dynamic>;
+      _log.debug('chat', 'GPT-4o ${sw.elapsedMilliseconds}ms, reason: $finishReason');
 
       if (finishReason == 'tool_calls') {
         // Append the assistant message (with tool_calls) to conversation
@@ -253,6 +302,7 @@ class OpenAIService {
           final callId = tc['id'] as String;
 
           String result;
+          _log.info('chat', 'Tool: $name');
           onToolCall?.call(_getToolLabel(name, kidsMode: kidsMode));
 
           switch (name) {
@@ -270,9 +320,11 @@ class OpenAIService {
                 final msgId = 'img_${DateTime.now().microsecondsSinceEpoch}';
                 imagePath = await StorageService.saveImage(b64, msgId);
                 latestImagePath = imagePath;
+                _log.info('image', 'Generated via ${provider.name}');
                 result =
                     'Image generated and displayed to the user. Prompt used: "$imgPrompt"';
               } catch (e) {
+                _log.error('image', 'Generation failed: $e');
                 result = 'Image generation failed: $e';
               }
               break;
@@ -297,10 +349,34 @@ class OpenAIService {
                 final msgId = 'img_${DateTime.now().microsecondsSinceEpoch}';
                 imagePath = await StorageService.saveImage(b64, msgId);
                 latestImagePath = imagePath;
+                _log.info('image', 'Edited via ${provider.name}');
                 result =
                     'Image edited and displayed to the user. Instruction: "$instruction"';
               } catch (e) {
+                _log.error('image', 'Edit failed: $e');
                 result = 'Image editing failed: $e';
+              }
+              break;
+            case 'text_to_speech':
+              try {
+                var ttsText = args['text'] as String;
+                // Hard limit to ~500 chars (~1 min speech) to control costs
+                if (ttsText.length > 500) {
+                  ttsText = ttsText.substring(0, 500);
+                }
+                final ttsProvider = TtsService.getProvider(settings);
+                final bytes = await ttsProvider.speak(
+                  text: ttsText,
+                  voice: settings.ttsVoice,
+                );
+                final msgId = 'tts_${DateTime.now().microsecondsSinceEpoch}';
+                audioPath = await StorageService.saveAudio(bytes, msgId);
+                _log.info('tts', 'Generated via ${ttsProvider.name}');
+                result =
+                    'Audio generated and will play for the user. Do NOT repeat the spoken text in your response — just acknowledge briefly or continue the conversation.';
+              } catch (e) {
+                _log.error('tts', 'Generation failed: $e');
+                result = 'Text-to-speech failed: $e';
               }
               break;
             default:
@@ -319,13 +395,15 @@ class OpenAIService {
 
       // finish_reason == 'stop' (or 'length') — return text
       final content = (msg['content'] as String?) ?? '';
-      return ChatResponse(content: content.trim(), imagePath: imagePath);
+      return ChatResponse(
+          content: content.trim(), imagePath: imagePath, audioPath: audioPath);
     }
 
     // Safety: max iterations reached
     return ChatResponse(
       content: 'I ran into a problem processing tool calls. Please try again.',
       imagePath: imagePath,
+      audioPath: audioPath,
     );
   }
 }

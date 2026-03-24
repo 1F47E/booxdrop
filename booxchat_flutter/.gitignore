@@ -11,3 +11,4 @@ build/
 .gradle/
 local.properties
 GeneratedPluginRegistrant.java
+plans/

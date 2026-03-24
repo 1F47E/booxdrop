@@ -78,6 +78,21 @@ class StorageService {
     return file.path;
   }
 
+  /// Returns all audio files sorted newest-first.
+  static Future<List<File>> listAudio() async {
+    final dir = await audioDirectory;
+    if (!await dir.exists()) return [];
+    final files = <File>[];
+    await for (final entity in dir.list()) {
+      if (entity is File && entity.path.endsWith('.mp3')) {
+        files.add(entity);
+      }
+    }
+    files.sort(
+        (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    return files;
+  }
+
   /// Deletes an audio file if it exists.
   static Future<void> deleteAudio(String path) async {
     final file = File(path);

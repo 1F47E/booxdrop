@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
 import '../services/tts_service.dart';
+import '../config/app_version.dart';
+import 'changelog_screen.dart';
+import 'audio_gallery_screen.dart';
 import 'image_gallery_screen.dart';
+import 'logs_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -294,7 +298,56 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              const Divider(height: 1, color: Colors.black26),
+              ListTile(
+                leading:
+                    const Icon(Icons.article_outlined, color: Colors.black),
+                title: const Text('Logs',
+                    style:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                subtitle: const Text('View app activity log'),
+                trailing:
+                    const Icon(Icons.chevron_right, color: Colors.black54),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LogsScreen()),
+                  );
+                },
+              ),
+              const Divider(height: 1, color: Colors.black26),
+              ListTile(
+                leading:
+                    const Icon(Icons.history, color: Colors.black),
+                title: const Text('Changelog',
+                    style:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                subtitle: const Text('Version history'),
+                trailing:
+                    const Icon(Icons.chevron_right, color: Colors.black54),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ChangelogScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: Text(
+                  'v${AppVersion.version}${AppVersion.buildDate.isNotEmpty ? ' \u00b7 ${AppVersion.buildDate}' : ''}',
+                  style: const TextStyle(fontSize: 13, color: Colors.black38),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Center(
+                child: Text(
+                  'Built with \u2764\ufe0f for Mia and Iva',
+                  style: TextStyle(fontSize: 13, color: Colors.black38),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         );

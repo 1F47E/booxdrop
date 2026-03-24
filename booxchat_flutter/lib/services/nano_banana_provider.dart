@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'image_provider.dart';
+import 'log_service.dart';
+
+final _log = LogService.instance;
 
 class NanoBananaProvider implements ImageProviderAdapter {
   final String model;
@@ -67,8 +70,11 @@ class NanoBananaProvider implements ImageProviderAdapter {
 
   Future<String> _sendRequest(Map<String, dynamic> body) async {
     if (_apiKey.isEmpty) {
+      _log.error('image', 'GOOGLE_AI_API_KEY not set');
       throw Exception('GOOGLE_AI_API_KEY is not set');
     }
+    _log.info('image', 'Nano Banana $model request...');
+    final sw = Stopwatch()..start();
     final response = await http
         .post(
           _endpoint,
@@ -76,11 +82,14 @@ class NanoBananaProvider implements ImageProviderAdapter {
           body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 120));
+    sw.stop();
 
     if (response.statusCode != 200) {
+      _log.error('image', 'Nano Banana HTTP ${response.statusCode}');
       throw Exception(
           'Nano Banana error ${response.statusCode}: ${response.body}');
     }
+    _log.debug('image', 'Nano Banana ${sw.elapsedMilliseconds}ms');
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final candidates = data['candidates'] as List;
