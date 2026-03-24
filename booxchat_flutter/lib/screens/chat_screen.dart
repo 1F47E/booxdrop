@@ -278,6 +278,15 @@ class _MessageBubble extends StatelessWidget {
   final Message message;
   const _MessageBubble({required this.message});
 
+  static void _showFullScreenImage(BuildContext context, String path) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _FullScreenImage(path: path),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
@@ -321,15 +330,18 @@ class _MessageBubble extends StatelessWidget {
               ),
             if (message.imagePath != null) ...[
               if (message.content.isNotEmpty) const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  File(message.imagePath!),
-                  width: 256,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Text(
-                    '[Image not found]',
-                    style: TextStyle(color: Colors.grey, fontSize: 13),
+              GestureDetector(
+                onTap: () => _showFullScreenImage(context, message.imagePath!),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(message.imagePath!),
+                    width: 256,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Text(
+                      '[Image not found]',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
                   ),
                 ),
               ),
@@ -363,6 +375,45 @@ class _LoadingBubble extends StatelessWidget {
           toolStatus != null ? '\u23f3 $toolStatus' : '...',
           style: TextStyle(color: Colors.black54, fontSize: fontSize),
         ),
+      ),
+    );
+  }
+}
+
+class _FullScreenImage extends StatelessWidget {
+  final String path;
+  const _FullScreenImage({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Center(
+            child: Image.file(
+              File(path),
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Text('[Image not found]'),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 8,
+            child: Material(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => Navigator.pop(context),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.close, color: Colors.white, size: 24),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
