@@ -113,9 +113,9 @@ class OpenAIService {
   }
 
   static const _toolLabels = {
-    'web_search': 'Searching the web...',
-    'fetch_page': 'Reading a page...',
-    'generate_image': 'Drawing an image...',
+    'web_search': '\ud83d\udd0d Searching the web...',
+    'fetch_page': '\ud83d\udcc4 Reading a page...',
+    'generate_image': '\ud83c\udfa8 Drawing an image...',
   };
 
   static const _kidsSearchLabels = [

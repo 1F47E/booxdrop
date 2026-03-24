@@ -345,6 +345,7 @@ class _LoadingBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final toolStatus = context.watch<ChatProvider>().toolStatus;
+    final fontSize = context.watch<SettingsProvider>().fontSize - 1;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -359,8 +360,8 @@ class _LoadingBubble extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
-          toolStatus ?? '...',
-          style: const TextStyle(color: Colors.black, fontSize: 15),
+          toolStatus != null ? '\u23f3 $toolStatus' : '...',
+          style: TextStyle(color: Colors.black54, fontSize: fontSize),
         ),
       ),
     );
