@@ -8,3 +8,11 @@ build/
 /icon_1024.png
 /icon_1024_v2.png
 /icon_1024_v3.png
+
+# Android / booxchat
+booxchat/local.properties
+booxchat/.gradle/
+booxchat/app/build/
+booxchat/build/
+booxchat/*.iml
+booxchat/.idea/
