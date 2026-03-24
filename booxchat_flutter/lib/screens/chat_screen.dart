@@ -279,7 +279,7 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
     final settings = context.watch<SettingsProvider>();
-    final fontSize = settings.kidsMode ? 20.0 : 15.0;
+    final fontSize = settings.fontSize;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,

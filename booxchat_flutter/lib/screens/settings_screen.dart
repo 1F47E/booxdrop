@@ -70,6 +70,43 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ],
+              const Divider(height: 1, color: Colors.black26),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  'Text Size: ${settings.rawFontSize.round()}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Slider(
+                  value: settings.rawFontSize,
+                  min: 12,
+                  max: 28,
+                  divisions: 16,
+                  label: '${settings.rawFontSize.round()}',
+                  activeColor: Colors.black,
+                  inactiveColor: Colors.black26,
+                  onChanged: (value) {
+                    settings.setFontSize(value);
+                    EinkService.requestFullRefresh();
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Preview',
+                  style: TextStyle(
+                    fontSize: settings.fontSize,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         );

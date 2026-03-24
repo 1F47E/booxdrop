@@ -4,12 +4,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsProvider extends ChangeNotifier {
   static const _kKidsMode = 'settings_kids_mode';
   static const _kKidsAge = 'settings_kids_age';
+  static const _kFontSize = 'settings_font_size';
 
   bool _kidsMode = false;
   int _kidsAge = 7;
+  double _fontSize = 17; // default +2 from original 15
 
   bool get kidsMode => _kidsMode;
   int get kidsAge => _kidsAge;
+  double get fontSize => _kidsMode ? (_fontSize + 5) : _fontSize;
+  double get rawFontSize => _fontSize;
 
   SettingsProvider() {
     _load();
@@ -19,6 +23,7 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _kidsMode = prefs.getBool(_kKidsMode) ?? false;
     _kidsAge = prefs.getInt(_kKidsAge) ?? 7;
+    _fontSize = prefs.getDouble(_kFontSize) ?? 17;
     notifyListeners();
   }
 
@@ -34,5 +39,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kKidsAge, _kidsAge);
+  }
+
+  Future<void> setFontSize(double size) async {
+    _fontSize = size.clamp(12, 28);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_kFontSize, _fontSize);
   }
 }
