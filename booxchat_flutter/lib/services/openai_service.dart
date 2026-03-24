@@ -179,10 +179,18 @@ class OpenAIService {
   }) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
 
-    // Build the conversation payload (mutable, grows with tool results)
-    final conversation = messages
-        .map((m) => <String, dynamic>{'role': m.role, 'content': m.content})
-        .toList();
+    // Build the conversation payload (mutable, grows with tool results).
+    // For assistant messages that have an associated image, annotate the
+    // content so the model knows what was previously generated and can
+    // handle follow-ups like "make it bigger" or "add a hat".
+    final conversation = messages.map((m) {
+      var content = m.content;
+      if (m.role == 'assistant' && m.imagePath != null) {
+        final tag = '[An image was generated and displayed to the user]';
+        content = content.isEmpty ? tag : '$content\n$tag';
+      }
+      return <String, dynamic>{'role': m.role, 'content': content};
+    }).toList();
 
     String? imagePath;
 
@@ -240,13 +248,15 @@ class OpenAIService {
               break;
             case 'generate_image':
               try {
+                final imgPrompt = args['prompt'] as String;
                 final b64 = await ImageService.generateImage(
-                  prompt: args['prompt'] as String,
+                  prompt: imgPrompt,
                   size: (args['size'] as String?) ?? '1024x1024',
                 );
                 final msgId = 'img_${DateTime.now().microsecondsSinceEpoch}';
                 imagePath = await StorageService.saveImage(b64, msgId);
-                result = 'Image generated successfully.';
+                result =
+                    'Image generated and displayed to the user. Prompt used: "$imgPrompt"';
               } catch (e) {
                 result = 'Image generation failed: $e';
               }

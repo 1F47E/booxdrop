@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/message.dart';
 import '../models/session.dart';
 import '../services/openai_service.dart';
-import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import 'settings_provider.dart';
 
@@ -84,6 +83,11 @@ class ChatProvider extends ChangeNotifier {
     buf.writeln('- Keep responses concise — the user is reading on an e-ink screen.');
     buf.writeln('- Use tools proactively when they would help answer the question.');
     buf.writeln('- Images will display in grayscale on the e-ink screen.');
+    buf.writeln('- When you generate an image, do NOT add any text commentary — '
+        'the image is shown directly to the user. Just generate it silently.');
+    buf.writeln('- You can see which images you previously generated in the conversation. '
+        'When the user asks to modify an image (e.g. "make it bigger", "add a hat", '
+        '"change the color"), use the previous prompt as a starting point and adjust it.');
 
     return Message(role: 'system', content: buf.toString());
   }
@@ -123,6 +127,25 @@ class ChatProvider extends ChangeNotifier {
     await loadSession(session.id);
   }
 
+  /// Creates a new session pre-seeded with an existing image so the user
+  /// can chat about it (e.g. "make it bigger", "add a rainbow").
+  Future<void> createSessionWithImage(String imagePath) async {
+    _saveTimer?.cancel();
+    if (_currentSessionId != null) await _persistSession();
+
+    final session = Session();
+    _sessions.insert(0, session);
+    await _saveSessions();
+
+    _currentSessionId = session.id;
+    _currentSession = session;
+    _messages.clear();
+    _error = null;
+    _messages.add(Message(role: 'assistant', content: '', imagePath: imagePath));
+    await _persistSession();
+    notifyListeners();
+  }
+
   Future<void> loadSession(String sessionId) async {
     _saveTimer?.cancel();
     if (_currentSessionId != null) {
@@ -149,16 +172,7 @@ class ChatProvider extends ChangeNotifier {
 
   Future<void> deleteSession(String sessionId) async {
     final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString('session_$sessionId');
-    if (json != null) {
-      final data = jsonDecode(json) as Map<String, dynamic>;
-      final msgList = data['messages'] as List;
-      for (final m in msgList) {
-        final path = (m as Map<String, dynamic>)['imagePath'] as String?;
-        if (path != null) await StorageService.deleteImage(path);
-      }
-      await prefs.remove('session_$sessionId');
-    }
+    await prefs.remove('session_$sessionId');
 
     _sessions.removeWhere((s) => s.id == sessionId);
     await _saveSessions();
@@ -238,11 +252,6 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void clearConversation() {
-    for (final msg in _messages) {
-      if (msg.imagePath != null) {
-        StorageService.deleteImage(msg.imagePath!);
-      }
-    }
     _messages.clear();
     _error = null;
     _scheduleSave();

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'full_screen_image.dart';
 import '../models/message.dart';
 import '../providers/chat_provider.dart';
 import '../providers/settings_provider.dart';
@@ -282,7 +283,7 @@ class _MessageBubble extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => _FullScreenImage(path: path),
+        builder: (_) => FullScreenImage(path: path),
       ),
     );
   }
@@ -317,19 +318,24 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
+        child: Builder(builder: (context) {
+          // Strip markdown image syntax (![alt](url)) the AI may include in text
+          final displayText = message.content
+              .replaceAll(RegExp(r'!\[[^\]]*\]\([^)]*\)'), '')
+              .trim();
+          return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (message.content.isNotEmpty)
+            if (displayText.isNotEmpty)
               Text(
-                message.content,
+                displayText,
                 style: TextStyle(
                   color: isUser ? Colors.white : Colors.black,
                   fontSize: fontSize,
                 ),
               ),
             if (message.imagePath != null) ...[
-              if (message.content.isNotEmpty) const SizedBox(height: 8),
+              if (displayText.isNotEmpty) const SizedBox(height: 8),
               GestureDetector(
                 onTap: () => _showFullScreenImage(context, message.imagePath!),
                 child: ClipRRect(
@@ -347,7 +353,8 @@ class _MessageBubble extends StatelessWidget {
               ),
             ],
           ],
-        ),
+        );
+        }),
       ),
     );
   }
@@ -380,41 +387,3 @@ class _LoadingBubble extends StatelessWidget {
   }
 }
 
-class _FullScreenImage extends StatelessWidget {
-  final String path;
-  const _FullScreenImage({required this.path});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          Center(
-            child: Image.file(
-              File(path),
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Text('[Image not found]'),
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            right: 8,
-            child: Material(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(20),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () => Navigator.pop(context),
-                child: const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(Icons.close, color: Colors.white, size: 24),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

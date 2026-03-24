@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
+import 'image_gallery_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -105,6 +106,23 @@ class SettingsScreen extends StatelessWidget {
                     color: Colors.black,
                   ),
                 ),
+              ),
+              const Divider(height: 1, color: Colors.black26),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.black),
+                title: const Text('Images',
+                    style:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                subtitle: const Text('View all generated images'),
+                trailing:
+                    const Icon(Icons.chevron_right, color: Colors.black54),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ImageGalleryScreen()),
+                  );
+                },
               ),
               const SizedBox(height: 16),
             ],

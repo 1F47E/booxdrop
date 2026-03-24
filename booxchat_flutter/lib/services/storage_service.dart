@@ -23,6 +23,20 @@ class StorageService {
     return file.path;
   }
 
+  /// Returns all image files sorted newest-first.
+  static Future<List<File>> listImages() async {
+    final dir = await imageDirectory;
+    if (!await dir.exists()) return [];
+    final files = <File>[];
+    await for (final entity in dir.list()) {
+      if (entity is File && entity.path.endsWith('.png')) {
+        files.add(entity);
+      }
+    }
+    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    return files;
+  }
+
   /// Deletes an image file if it exists.
   static Future<void> deleteImage(String path) async {
     final file = File(path);
