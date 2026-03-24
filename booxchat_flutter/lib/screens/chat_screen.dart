@@ -193,6 +193,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         controller: _controller,
                         maxLines: 5,
                         minLines: 1,
+                        style: TextStyle(
+                          fontSize: context.watch<SettingsProvider>().fontSize,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Message\u2026',
                           border: OutlineInputBorder(
