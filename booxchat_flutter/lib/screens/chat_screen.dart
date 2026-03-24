@@ -357,7 +357,7 @@ class _LoadingBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final toolStatus = context.watch<ChatProvider>().toolStatus;
-    final fontSize = context.watch<SettingsProvider>().fontSize - 1;
+    final fontSize = (context.watch<SettingsProvider>().fontSize - 5).clamp(10.0, double.infinity);
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
