@@ -1,10 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/live_session_provider.dart';
 import 'screens/drawing_screen.dart';
+import 'services/collaboration_transport.dart';
 import 'services/device_identity_service.dart';
-import 'services/fake_collaboration_transport.dart';
 import 'services/settings_service.dart';
+import 'services/websocket_collaboration_transport.dart';
+
+const serverUrl = 'wss://booxchat.mos6581.cc/ws/live';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,12 +23,16 @@ class KazykaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use real websocket in release, fake in debug/test
+    final CollaborationTransport transport = kReleaseMode
+        ? WebSocketCollaborationTransport()
+        : WebSocketCollaborationTransport(); // Use real even in debug for now
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsService()),
         ChangeNotifierProvider(
-          create: (_) =>
-              LiveSessionProvider(FakeCollaborationTransport()),
+          create: (_) => LiveSessionProvider(transport),
         ),
         Provider.value(value: identity),
       ],

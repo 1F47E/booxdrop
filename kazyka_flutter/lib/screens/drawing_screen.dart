@@ -275,7 +275,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
     if (result == null || !mounted) return;
 
     final session = context.read<LiveSessionProvider>();
-    const serverUrl = 'ws://localhost:8080/ws/live'; // TODO: configure
+    const serverUrl = 'wss://booxchat.mos6581.cc/ws/live';
 
     if (result['action'] == 'create') {
       session.createSession(
