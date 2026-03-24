@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/message.dart';
 import '../models/session.dart';
 import '../services/openai_service.dart';
+import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import 'settings_provider.dart';
 
@@ -88,8 +89,32 @@ class ChatProvider extends ChangeNotifier {
     buf.writeln('- You can see which images you previously generated in the conversation. '
         'When the user asks to modify an image (e.g. "make it bigger", "add a hat", '
         '"change the color"), use the previous prompt as a starting point and adjust it.');
+    buf.writeln();
+    buf.writeln('QUICK REPLIES: At the end of your response, optionally suggest up to 4 '
+        'short follow-up replies the user might want to send next. Format them as a JSON '
+        'array inside an HTML comment at the very end of your message, like this: '
+        '<!--quick_replies:["Reply 1","Reply 2","Reply 3"]-->. '
+        'Keep each reply under 30 characters. Only include when natural follow-ups exist. '
+        'Do NOT include the quick replies tag when generating images.');
 
     return Message(role: 'system', content: buf.toString());
+  }
+
+  static ({String content, List<String>? quickReplies}) _parseQuickReplies(
+      String content) {
+    final regex = RegExp(r'<!--quick_replies:(\[.*?\])-->', dotAll: true);
+    final match = regex.firstMatch(content);
+    if (match == null) return (content: content, quickReplies: null);
+
+    final clean = content.replaceAll(regex, '').trimRight();
+    try {
+      final list = (jsonDecode(match.group(1)!) as List)
+          .map((e) => e.toString())
+          .toList();
+      return (content: clean, quickReplies: list.isEmpty ? null : list);
+    } catch (_) {
+      return (content: clean, quickReplies: null);
+    }
   }
 
   Future<void> _validateApiKey() async {
@@ -101,8 +126,30 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> _loadSessions() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString('sessions_index');
+    // Try file-based storage first
+    var json = await StorageService.loadSessionIndex();
+
+    // Migrate from SharedPreferences if file storage is empty
+    if (json == null) {
+      final prefs = await SharedPreferences.getInstance();
+      json = prefs.getString('sessions_index');
+      if (json != null) {
+        // Migrate index to file
+        await StorageService.saveSessionIndex(json);
+        // Migrate each session's messages
+        final list = jsonDecode(json) as List;
+        for (final e in list) {
+          final id = (e as Map<String, dynamic>)['id'] as String;
+          final msgJson = prefs.getString('session_$id');
+          if (msgJson != null) {
+            await StorageService.saveSessionMessages(id, msgJson);
+            await prefs.remove('session_$id');
+          }
+        }
+        await prefs.remove('sessions_index');
+      }
+    }
+
     if (json != null) {
       final list = jsonDecode(json) as List;
       _sessions = list
@@ -113,9 +160,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> _saveSessions() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      'sessions_index',
+    await StorageService.saveSessionIndex(
       jsonEncode(_sessions.map((s) => s.toJson()).toList()),
     );
   }
@@ -158,8 +203,7 @@ class ChatProvider extends ChangeNotifier {
     _messages.clear();
     _error = null;
 
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString('session_$sessionId');
+    final json = await StorageService.loadSessionMessages(sessionId);
     if (json != null) {
       final data = jsonDecode(json) as Map<String, dynamic>;
       final msgList = data['messages'] as List;
@@ -171,8 +215,17 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> deleteSession(String sessionId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('session_$sessionId');
+    // Delete images from this session
+    final json = await StorageService.loadSessionMessages(sessionId);
+    if (json != null) {
+      final data = jsonDecode(json) as Map<String, dynamic>;
+      final msgList = data['messages'] as List;
+      for (final m in msgList) {
+        final path = (m as Map<String, dynamic>)['imagePath'] as String?;
+        if (path != null) await StorageService.deleteImage(path);
+      }
+    }
+    await StorageService.deleteSessionData(sessionId);
 
     _sessions.removeWhere((s) => s.id == sessionId);
     await _saveSessions();
@@ -192,11 +245,10 @@ class ChatProvider extends ChangeNotifier {
 
   Future<void> _persistSession() async {
     if (_currentSessionId == null) return;
-    final prefs = await SharedPreferences.getInstance();
     final data = jsonEncode({
       'messages': _messages.map((m) => m.toJson()).toList(),
     });
-    await prefs.setString('session_$_currentSessionId', data);
+    await StorageService.saveSessionMessages(_currentSessionId!, data);
 
     if (_currentSession != null) {
       _currentSession!.updatedAt = DateTime.now();
@@ -236,10 +288,12 @@ class ChatProvider extends ChangeNotifier {
           notifyListeners();
         },
       );
+      final parsed = _parseQuickReplies(response.content);
       _messages.add(Message(
         role: 'assistant',
-        content: response.content,
+        content: parsed.content,
         imagePath: response.imagePath,
+        quickReplies: parsed.quickReplies,
       ));
       _scheduleSave();
     } catch (e) {

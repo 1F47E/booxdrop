@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 
 class StorageService {
   static Directory? _imageDir;
+  static Directory? _chatsDir;
 
   static Future<Directory> get imageDirectory async {
     if (_imageDir != null && await _imageDir!.exists()) return _imageDir!;
@@ -13,6 +14,49 @@ class StorageService {
       await _imageDir!.create(recursive: true);
     }
     return _imageDir!;
+  }
+
+  static Future<Directory> get chatsDirectory async {
+    if (_chatsDir != null && await _chatsDir!.exists()) return _chatsDir!;
+    final appDir = await getApplicationDocumentsDirectory();
+    _chatsDir = Directory('${appDir.path}/chats');
+    if (!await _chatsDir!.exists()) {
+      await _chatsDir!.create(recursive: true);
+    }
+    return _chatsDir!;
+  }
+
+  static Future<void> saveSessionIndex(String jsonString) async {
+    final dir = await chatsDirectory;
+    final file = File('${dir.path}/sessions.json');
+    await file.writeAsString(jsonString);
+  }
+
+  static Future<String?> loadSessionIndex() async {
+    final dir = await chatsDirectory;
+    final file = File('${dir.path}/sessions.json');
+    if (await file.exists()) return file.readAsString();
+    return null;
+  }
+
+  static Future<void> saveSessionMessages(
+      String sessionId, String jsonString) async {
+    final dir = await chatsDirectory;
+    final file = File('${dir.path}/$sessionId.json');
+    await file.writeAsString(jsonString);
+  }
+
+  static Future<String?> loadSessionMessages(String sessionId) async {
+    final dir = await chatsDirectory;
+    final file = File('${dir.path}/$sessionId.json');
+    if (await file.exists()) return file.readAsString();
+    return null;
+  }
+
+  static Future<void> deleteSessionData(String sessionId) async {
+    final dir = await chatsDirectory;
+    final file = File('${dir.path}/$sessionId.json');
+    if (await file.exists()) await file.delete();
   }
 
   /// Saves base64 image data to disk, returns the file path.

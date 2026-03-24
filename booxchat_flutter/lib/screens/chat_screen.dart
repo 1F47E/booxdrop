@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'full_screen_image.dart';
+import '../data/prompt_suggestions.dart';
 import '../models/message.dart';
 import '../providers/chat_provider.dart';
 import '../providers/settings_provider.dart';
@@ -91,6 +92,13 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context, provider, _) {
         return Scaffold(
           appBar: AppBar(
+            leading: Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => Scaffold.of(ctx).openDrawer(),
+                tooltip: 'Chats',
+              ),
+            ),
             title: Text(
               provider.currentSession?.title ?? 'Smarty Pants',
               style: const TextStyle(fontSize: 18, color: Colors.white),
@@ -98,17 +106,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             backgroundColor: Colors.black,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.settings, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const SettingsScreen()),
-                  );
-                },
-                tooltip: 'Settings',
-              ),
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.white),
                 onPressed: provider.currentSessionId == null
@@ -118,6 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
+          drawer: _HistoryDrawer(provider: provider),
           body: Column(
             children: [
               // Offline banner
@@ -134,25 +132,46 @@ class _ChatScreenState extends State<ChatScreen> {
                   text: provider.apiKeyWarning!,
                 ),
 
-              // Message list
+              // Message list or conversation starters
               Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  itemCount: provider.messages.length +
-                      (provider.isLoading ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == provider.messages.length) {
-                      return _LoadingBubble();
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child:
-                          _MessageBubble(message: provider.messages[index]),
-                    );
-                  },
-                ),
+                child: provider.messages.isEmpty && !provider.isLoading
+                    ? _ConversationStarters(
+                        onTap: (text) => provider.sendMessage(text),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                        itemCount: provider.messages.length +
+                            (provider.isLoading ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == provider.messages.length) {
+                            return _LoadingBubble();
+                          }
+                          final message = provider.messages[index];
+                          final isLastAssistant =
+                              index == provider.messages.length - 1 &&
+                                  message.role == 'assistant' &&
+                                  !provider.isLoading &&
+                                  message.quickReplies != null &&
+                                  message.quickReplies!.isNotEmpty;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _MessageBubble(message: message),
+                                if (isLastAssistant)
+                                  _QuickReplies(
+                                    replies: message.quickReplies!,
+                                    onTap: (text) =>
+                                        provider.sendMessage(text),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
               ),
 
               // Error banner
@@ -384,6 +403,288 @@ class _LoadingBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ConversationStarters extends StatelessWidget {
+  final void Function(String text) onTap;
+  const _ConversationStarters({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final suggestions = getRandomSuggestions(
+      count: 6,
+      kidsMode: settings.kidsMode,
+      kidsAge: settings.kidsAge,
+    );
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.chat_bubble_outline, size: 48, color: Colors.black38),
+            const SizedBox(height: 12),
+            Text(
+              settings.kidsMode ? 'What do you want to do?' : 'Start a conversation',
+              style: TextStyle(
+                fontSize: settings.kidsMode ? 22.0 : 16.0,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: suggestions.map((text) => OutlinedButton(
+                onPressed: () => onTap(text),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  side: const BorderSide(color: Colors.black),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                ),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: settings.kidsMode ? 18.0 : 14.0,
+                  ),
+                ),
+              )).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickReplies extends StatelessWidget {
+  final List<String> replies;
+  final void Function(String text) onTap;
+  const _QuickReplies({required this.replies, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: replies.map((text) => OutlinedButton(
+          onPressed: () => onTap(text),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.black,
+            side: const BorderSide(color: Colors.black54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(fontSize: settings.kidsMode ? 16.0 : 13.0),
+          ),
+        )).toList(),
+      ),
+    );
+  }
+}
+
+class _HistoryDrawer extends StatefulWidget {
+  final ChatProvider provider;
+  const _HistoryDrawer({required this.provider});
+
+  @override
+  State<_HistoryDrawer> createState() => _HistoryDrawerState();
+}
+
+class _HistoryDrawerState extends State<_HistoryDrawer> {
+  int _visibleCount = 20;
+
+  @override
+  Widget build(BuildContext context) {
+    final sessions = widget.provider.sessions;
+    final currentId = widget.provider.currentSessionId;
+    final visible = sessions.take(_visibleCount).toList();
+    final hasMore = sessions.length > _visibleCount;
+
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.black)),
+              ),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Chats',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.black),
+                    onPressed: () {
+                      widget.provider.createNewSession();
+                      Navigator.pop(context);
+                    },
+                    tooltip: 'New chat',
+                  ),
+                ],
+              ),
+            ),
+
+            // Session list
+            Expanded(
+              child: sessions.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No chats yet',
+                        style: TextStyle(color: Colors.black38, fontSize: 14),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: visible.length + (hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == visible.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                              child: TextButton(
+                                onPressed: () {
+                                  setState(() => _visibleCount += 20);
+                                },
+                                child: const Text(
+                                  'Load more',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        final session = visible[index];
+                        final isCurrent = session.id == currentId;
+                        return Dismissible(
+                          key: ValueKey(session.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            color: Colors.black12,
+                            child: const Icon(Icons.delete,
+                                color: Colors.black54),
+                          ),
+                          confirmDismiss: (_) async {
+                            return await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete chat?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(ctx, false),
+                                    child: const Text('Cancel',
+                                        style: TextStyle(
+                                            color: Colors.black)),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(ctx, true),
+                                    child: const Text('Delete',
+                                        style: TextStyle(
+                                            color: Colors.black)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          onDismissed: (_) {
+                            widget.provider.deleteSession(session.id);
+                          },
+                          child: ListTile(
+                            title: Text(
+                              session.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: isCurrent
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: Colors.black,
+                                fontSize: 15,
+                              ),
+                            ),
+                            subtitle: Text(
+                              _formatDate(session.updatedAt),
+                              style: const TextStyle(
+                                  color: Colors.black54, fontSize: 12),
+                            ),
+                            selected: isCurrent,
+                            selectedTileColor: Colors.black.withValues(alpha: 0.05),
+                            onTap: () {
+                              widget.provider.loadSession(session.id);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+
+            // Settings at bottom
+            Container(
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Colors.black)),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.settings, color: Colors.black),
+                title: const Text(
+                  'Settings',
+                  style: TextStyle(color: Colors.black),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SettingsScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
   }
 }
 

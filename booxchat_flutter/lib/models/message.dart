@@ -4,6 +4,7 @@ class Message {
   final String content;
   final String? imagePath;
   final String? toolCallId; // for role='tool' responses
+  final List<String>? quickReplies;
 
   Message({
     String? id,
@@ -11,6 +12,7 @@ class Message {
     required this.content,
     this.imagePath,
     this.toolCallId,
+    this.quickReplies,
   }) : id = id ?? '${DateTime.now().microsecondsSinceEpoch}_${role.hashCode}';
 
   Map<String, dynamic> toJson() => {
@@ -18,6 +20,7 @@ class Message {
         'role': role,
         'content': content,
         if (imagePath != null) 'imagePath': imagePath,
+        if (quickReplies != null) 'quickReplies': quickReplies,
       };
 
   factory Message.fromJson(Map<String, dynamic> json) => Message(
@@ -25,5 +28,8 @@ class Message {
         role: json['role'] as String,
         content: (json['content'] as String?) ?? '',
         imagePath: json['imagePath'] as String?,
+        quickReplies: (json['quickReplies'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList(),
       );
 }
