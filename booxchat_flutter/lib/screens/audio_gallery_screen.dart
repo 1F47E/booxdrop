@@ -32,6 +32,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
   @override
   void dispose() {
     _playerSub?.cancel();
+    _player.stop();
     _player.dispose();
     super.dispose();
   }

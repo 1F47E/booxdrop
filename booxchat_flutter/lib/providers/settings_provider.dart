@@ -170,4 +170,35 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kTtsVoice, voice);
   }
+
+  Future<void> saveAll({
+    required bool kidsMode,
+    required int kidsAge,
+    required double fontSize,
+    required String imageProvider,
+    required String nanoBananaModel,
+    required String grokModel,
+    required String ttsProvider,
+    required String ttsVoice,
+  }) async {
+    _kidsMode = kidsMode;
+    _kidsAge = kidsAge;
+    _fontSize = fontSize;
+    _imageProvider = imageProvider;
+    _nanoBananaModel = nanoBananaModel;
+    _grokModel = grokModel;
+    _ttsProvider = ttsProvider;
+    _ttsVoice = ttsVoice;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kKidsMode, kidsMode);
+    await prefs.setInt(_kKidsAge, kidsAge);
+    await prefs.setDouble(_kFontSize, fontSize);
+    await prefs.setString(_kImageProvider, imageProvider);
+    await prefs.setString(_kNanoBananaModel, nanoBananaModel);
+    await prefs.setString(_kGrokModel, grokModel);
+    await prefs.setString(_kTtsProvider, ttsProvider);
+    await prefs.setString(_kTtsVoice, ttsVoice);
+  }
 }

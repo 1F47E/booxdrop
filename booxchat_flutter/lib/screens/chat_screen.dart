@@ -342,8 +342,12 @@ class _MessageBubbleState extends State<_MessageBubble> {
         await _player!.stop();
         if (mounted) setState(() => _isPlaying = false);
       } else {
-        await _player!.setFilePath(widget.message.audioPath!);
-        await _player!.play();
+        try {
+          await _player!.setFilePath(widget.message.audioPath!);
+          await _player!.play();
+        } catch (_) {
+          if (mounted) setState(() => _isPlaying = false);
+        }
       }
     } finally {
       _toggling = false;

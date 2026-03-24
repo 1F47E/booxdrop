@@ -228,6 +228,12 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> deleteSession(String sessionId) async {
+    // Flush pending save so disk state matches in-memory state
+    _saveTimer?.cancel();
+    if (_currentSessionId == sessionId) {
+      await _persistSession();
+    }
+
     // Delete images and audio from this session
     final json = await StorageService.loadSessionMessages(sessionId);
     if (json != null) {
