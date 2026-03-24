@@ -112,9 +112,18 @@ class OpenAIService {
     return resp.content;
   }
 
+  static const _toolLabels = {
+    'web_search': 'Searching the web...',
+    'fetch_page': 'Reading a page...',
+    'generate_image': 'Drawing an image...',
+  };
+
   /// Sends messages with tool support. Loops until the model produces a
   /// final text response or the iteration limit is reached.
-  static Future<ChatResponse> sendWithTools(List<Message> messages) async {
+  static Future<ChatResponse> sendWithTools(
+    List<Message> messages, {
+    void Function(String status)? onToolCall,
+  }) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
 
     // Build the conversation payload (mutable, grows with tool results)
@@ -167,6 +176,7 @@ class OpenAIService {
           final callId = tc['id'] as String;
 
           String result;
+          onToolCall?.call(_toolLabels[name] ?? 'Using $name...');
 
           switch (name) {
             case 'web_search':

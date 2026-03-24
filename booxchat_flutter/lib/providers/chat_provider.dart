@@ -21,6 +21,7 @@ class ChatProvider extends ChangeNotifier {
   final ConnectivityService _connectivity = ConnectivityService();
   bool _isOnline = true;
   String? _apiKeyWarning;
+  String? _toolStatus;
 
   List<Message> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
@@ -30,6 +31,7 @@ class ChatProvider extends ChangeNotifier {
   List<Session> get sessions => List.unmodifiable(_sessions);
   bool get isOnline => _isOnline;
   String? get apiKeyWarning => _apiKeyWarning;
+  String? get toolStatus => _toolStatus;
 
   ChatProvider(this._settings) {
     _connectivity.checkNow().then((online) {
@@ -212,7 +214,13 @@ class ChatProvider extends ChangeNotifier {
 
     try {
       final history = [_buildSystemPrompt(), ..._messages];
-      final response = await OpenAIService.sendWithTools(history);
+      final response = await OpenAIService.sendWithTools(
+        history,
+        onToolCall: (status) {
+          _toolStatus = status;
+          notifyListeners();
+        },
+      );
       _messages.add(Message(
         role: 'assistant',
         content: response.content,
@@ -223,6 +231,7 @@ class ChatProvider extends ChangeNotifier {
       _error = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
+      _toolStatus = null;
       notifyListeners();
     }
   }

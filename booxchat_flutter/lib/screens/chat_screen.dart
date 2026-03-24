@@ -341,6 +341,7 @@ class _MessageBubble extends StatelessWidget {
 class _LoadingBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final toolStatus = context.watch<ChatProvider>().toolStatus;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -354,9 +355,9 @@ class _LoadingBubble extends StatelessWidget {
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: const Text(
-          '...',
-          style: TextStyle(color: Colors.black, fontSize: 20),
+        child: Text(
+          toolStatus ?? '...',
+          style: const TextStyle(color: Colors.black, fontSize: 15),
         ),
       ),
     );
