@@ -23,15 +23,37 @@ final class MTPDevice {
 
     static func initialize() { LIBMTP_Init() }
 
-    init?() {
+    init?(deviceIndex: Int = 0) {
         var rawdevs: UnsafeMutablePointer<LIBMTP_raw_device_t>?
         var numdevs: Int32 = 0
         let err = LIBMTP_Detect_Raw_Devices(&rawdevs, &numdevs)
         guard err == LIBMTP_ERROR_NONE, numdevs > 0, let rawdevs = rawdevs else { return nil }
-        device = LIBMTP_Open_Raw_Device_Uncached(&rawdevs[0])
+        guard deviceIndex < Int(numdevs) else {
+            fputs("Error: Device index \(deviceIndex) out of range (found \(numdevs) device(s))\n", stderr)
+            free(rawdevs)
+            return nil
+        }
+        device = LIBMTP_Open_Raw_Device_Uncached(&rawdevs[deviceIndex])
         free(rawdevs)
         guard device != nil else { return nil }
         LIBMTP_Get_Storage(device, Int32(LIBMTP_STORAGE_SORTBY_NOTSORTED))
+    }
+
+    static func listDevices() {
+        var rawdevs: UnsafeMutablePointer<LIBMTP_raw_device_t>?
+        var numdevs: Int32 = 0
+        let err = LIBMTP_Detect_Raw_Devices(&rawdevs, &numdevs)
+        guard err == LIBMTP_ERROR_NONE, numdevs > 0, let rawdevs = rawdevs else {
+            print("No MTP devices found.")
+            return
+        }
+        print("Found \(numdevs) device(s):\n")
+        for i in 0..<Int(numdevs) {
+            let dev = rawdevs[i]
+            print("  [\(i)] VID=\(String(format: "%04x", dev.device_entry.vendor_id)) PID=\(String(format: "%04x", dev.device_entry.product_id))")
+        }
+        print("\nUse -d <index> to select a device.")
+        free(rawdevs)
     }
 
     deinit {
@@ -178,22 +200,23 @@ func printUsage() {
     booxcp — MTP file transfer CLI
 
     Usage:
-      booxcp ls [/path]                List files on device
-      booxcp cp <local> <device-path>  Copy local file/dir to device
-      booxcp get <device-path> <local> Download file from device
-      booxcp rm <device-path>          Delete file/folder on device
-      booxcp mkdir <device-path>       Create folder on device
-      booxcp df                        Show device storage info
-      booxcp tree [/path] [depth]      Show directory tree
+      booxcp [-d <index>] ls [/path]                List files on device
+      booxcp [-d <index>] cp <local> <device-path>  Copy local file/dir to device
+      booxcp [-d <index>] get <device-path> <local> Download file from device
+      booxcp [-d <index>] rm <device-path>          Delete file/folder on device
+      booxcp [-d <index>] mkdir <device-path>       Create folder on device
+      booxcp [-d <index>] df                        Show device storage info
+      booxcp [-d <index>] tree [/path] [depth]      Show directory tree
+      booxcp devices                                List connected MTP devices
+
+    Options:
+      -d, --device <index>  Select device by index (default: 0)
 
     Examples:
       booxcp ls /Books
+      booxcp -d 1 ls /Books
       booxcp cp ~/books/MyBook.epub /Books/
-      booxcp cp ~/books/DogMan/ /Books/DogMan
-      booxcp get /Books/MyBook.epub ./MyBook.epub
-      booxcp rm /Books/OldBook.epub
-      booxcp mkdir /Books/NewSeries
-      booxcp tree /Books 2
+      booxcp devices
     """
     print(usage)
 }
@@ -202,9 +225,9 @@ func humanSize(_ bytes: UInt64) -> String {
     ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
 }
 
-func connect() -> MTPDevice {
+func connect(deviceIndex: Int = 0) -> MTPDevice {
     MTPDevice.initialize()
-    guard let dev = MTPDevice() else {
+    guard let dev = MTPDevice(deviceIndex: deviceIndex) else {
         fputs("Error: No MTP device found. Is it plugged in and set to File Transfer mode?\n", stderr)
         exit(1)
     }
@@ -438,60 +461,78 @@ extension FileManager {
 
 // MARK: - Main
 
-let args = CommandLine.arguments
-guard args.count >= 2 else {
+var rawArgs = Array(CommandLine.arguments.dropFirst())
+
+// Parse -d / --device flag
+var deviceIndex = 0
+if let flagIdx = rawArgs.firstIndex(where: { $0 == "-d" || $0 == "--device" }) {
+    guard flagIdx + 1 < rawArgs.count, let idx = Int(rawArgs[flagIdx + 1]) else {
+        fputs("Error: -d requires a device index number\n", stderr)
+        exit(1)
+    }
+    deviceIndex = idx
+    rawArgs.remove(at: flagIdx + 1)
+    rawArgs.remove(at: flagIdx)
+}
+
+guard !rawArgs.isEmpty else {
     printUsage()
     exit(0)
 }
 
-let command = args[1]
+let command = rawArgs[0]
+let cmdArgs = Array(rawArgs.dropFirst())
 
 switch command {
+case "devices":
+    MTPDevice.initialize()
+    MTPDevice.listDevices()
+
 case "ls":
-    let dev = connect()
-    let path = args.count > 2 ? args[2] : "/"
+    let dev = connect(deviceIndex: deviceIndex)
+    let path = cmdArgs.first ?? "/"
     cmdLs(dev: dev, path: path)
 
 case "tree":
-    let dev = connect()
-    let path = args.count > 2 ? args[2] : "/"
-    let depth = args.count > 3 ? Int(args[3]) ?? 3 : 3
+    let dev = connect(deviceIndex: deviceIndex)
+    let path = cmdArgs.first ?? "/"
+    let depth = cmdArgs.count > 1 ? Int(cmdArgs[1]) ?? 3 : 3
     cmdTree(dev: dev, path: path, maxDepth: depth)
 
 case "cp":
-    guard args.count >= 4 else {
+    guard cmdArgs.count >= 2 else {
         fputs("Usage: booxcp cp <local-path> <device-path>\n", stderr)
         exit(1)
     }
-    let dev = connect()
-    cmdCp(dev: dev, localPath: args[2], devicePath: args[3])
+    let dev = connect(deviceIndex: deviceIndex)
+    cmdCp(dev: dev, localPath: cmdArgs[0], devicePath: cmdArgs[1])
 
 case "get":
-    guard args.count >= 4 else {
+    guard cmdArgs.count >= 2 else {
         fputs("Usage: booxcp get <device-path> <local-path>\n", stderr)
         exit(1)
     }
-    let dev = connect()
-    cmdGet(dev: dev, devicePath: args[2], localPath: args[3])
+    let dev = connect(deviceIndex: deviceIndex)
+    cmdGet(dev: dev, devicePath: cmdArgs[0], localPath: cmdArgs[1])
 
 case "rm":
-    guard args.count >= 3 else {
+    guard cmdArgs.count >= 1 else {
         fputs("Usage: booxcp rm <device-path>\n", stderr)
         exit(1)
     }
-    let dev = connect()
-    cmdRm(dev: dev, devicePath: args[2])
+    let dev = connect(deviceIndex: deviceIndex)
+    cmdRm(dev: dev, devicePath: cmdArgs[0])
 
 case "mkdir":
-    guard args.count >= 3 else {
+    guard cmdArgs.count >= 1 else {
         fputs("Usage: booxcp mkdir <device-path>\n", stderr)
         exit(1)
     }
-    let dev = connect()
-    cmdMkdir(dev: dev, devicePath: args[2])
+    let dev = connect(deviceIndex: deviceIndex)
+    cmdMkdir(dev: dev, devicePath: cmdArgs[0])
 
 case "df":
-    let dev = connect()
+    let dev = connect(deviceIndex: deviceIndex)
     cmdDf(dev: dev)
 
 case "help", "-h", "--help":
