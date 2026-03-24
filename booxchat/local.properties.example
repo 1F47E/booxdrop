@@ -1,0 +1,8 @@
+# Copy this file to local.properties and fill in your key.
+# local.properties is gitignored — never commit it.
+
+# Your OpenAI API key (https://platform.openai.com/api-keys)
+OPENAI_API_KEY=sk-...
+
+# SDK path (set automatically by Android Studio)
+# sdk.dir=/Users/yourname/Library/Android/sdk
