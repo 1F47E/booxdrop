@@ -359,7 +359,15 @@ class OpenAIService {
               break;
             case 'text_to_speech':
               try {
-                var ttsText = args['text'] as String;
+                if (audioPath != null) {
+                  result = 'Audio already generated this turn.';
+                  break;
+                }
+                var ttsText = (args['text'] as String).trim();
+                if (ttsText.isEmpty) {
+                  result = 'Text-to-speech skipped: text was empty.';
+                  break;
+                }
                 // Hard limit to ~500 chars (~1 min speech) to control costs
                 if (ttsText.length > 500) {
                   ttsText = ttsText.substring(0, 500);
@@ -370,7 +378,7 @@ class OpenAIService {
                   voice: settings.ttsVoice,
                 );
                 final msgId = 'tts_${DateTime.now().microsecondsSinceEpoch}';
-                audioPath = await StorageService.saveAudio(bytes, msgId);
+                audioPath ??= await StorageService.saveAudio(bytes, msgId);
                 _log.info('tts', 'Generated via ${ttsProvider.name}');
                 result =
                     'Audio generated and will play for the user. Do NOT repeat the spoken text in your response — just acknowledge briefly or continue the conversation.';

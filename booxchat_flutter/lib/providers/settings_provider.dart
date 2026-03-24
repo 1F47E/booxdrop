@@ -7,6 +7,7 @@ class SettingsProvider extends ChangeNotifier {
   static const imageProviderNames = {
     'nano_banana': 'Nano Banana',
     'openai': 'OpenAI',
+    'grok': 'Grok',
   };
   static const ttsProviderNames = {
     'openai': 'OpenAI',
@@ -20,6 +21,14 @@ class SettingsProvider extends ChangeNotifier {
     'gemini-3.1-flash-image-preview': '~\$0.07/img',
     'nano-banana-pro-preview': '~\$0.10/img',
   };
+  static const grokModelNames = {
+    'grok-imagine-image': 'Standard',
+    'grok-imagine-image-pro': 'Pro',
+  };
+  static const grokModelPrices = {
+    'grok-imagine-image': '~\$0.02/img',
+    'grok-imagine-image-pro': '~\$0.07/img',
+  };
 
   static bool get hasGoogleKey =>
       (dotenv.env['GOOGLE_AI_API_KEY'] ?? '').isNotEmpty;
@@ -27,10 +36,13 @@ class SettingsProvider extends ChangeNotifier {
       (dotenv.env['OPENAI_API_KEY'] ?? '').isNotEmpty;
   static bool get hasElevenLabsKey =>
       (dotenv.env['ELEVENLABS_API_KEY'] ?? '').isNotEmpty;
+  static bool get hasXAIKey =>
+      (dotenv.env['XAI_API_KEY'] ?? '').isNotEmpty;
 
   List<String> get availableImageProviders => [
         if (hasGoogleKey) 'nano_banana',
         if (hasOpenAIKey) 'openai',
+        if (hasXAIKey) 'grok',
       ];
 
   List<String> get availableTtsProviders => [
@@ -43,6 +55,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _kFontSize = 'settings_font_size';
   static const _kImageProvider = 'settings_image_provider';
   static const _kNanoBananaModel = 'settings_nano_banana_model';
+  static const _kGrokModel = 'settings_grok_model';
   static const _kTtsProvider = 'settings_tts_provider';
   static const _kTtsVoice = 'settings_tts_voice';
 
@@ -51,6 +64,7 @@ class SettingsProvider extends ChangeNotifier {
   double _fontSize = 17; // default +2 from original 15
   String _imageProvider = 'nano_banana';
   String _nanoBananaModel = 'gemini-3.1-flash-image-preview';
+  String _grokModel = 'grok-imagine-image';
   String _ttsProvider = 'openai';
   String _ttsVoice = 'nova';
 
@@ -65,6 +79,7 @@ class SettingsProvider extends ChangeNotifier {
         : 'nano_banana';
   }
   String get nanoBananaModel => _nanoBananaModel;
+  String get grokModel => _grokModel;
   String get ttsProvider {
     if (availableTtsProviders.contains(_ttsProvider)) return _ttsProvider;
     return availableTtsProviders.isNotEmpty
@@ -90,6 +105,7 @@ class SettingsProvider extends ChangeNotifier {
     _imageProvider = prefs.getString(_kImageProvider) ?? 'nano_banana';
     _nanoBananaModel = prefs.getString(_kNanoBananaModel) ??
         'gemini-3.1-flash-image-preview';
+    _grokModel = prefs.getString(_kGrokModel) ?? 'grok-imagine-image';
     _ttsProvider = prefs.getString(_kTtsProvider) ?? 'openai';
     _ttsVoice = prefs.getString(_kTtsVoice) ?? 'nova';
     notifyListeners();
@@ -128,6 +144,13 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kNanoBananaModel, model);
+  }
+
+  Future<void> setGrokModel(String model) async {
+    _grokModel = model;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kGrokModel, model);
   }
 
   Future<void> setTtsProvider(String value) async {

@@ -340,6 +340,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
 
       if (_isPlaying) {
         await _player!.stop();
+        if (mounted) setState(() => _isPlaying = false);
       } else {
         await _player!.setFilePath(widget.message.audioPath!);
         await _player!.play();

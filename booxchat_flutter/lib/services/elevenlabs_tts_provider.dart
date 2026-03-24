@@ -9,12 +9,14 @@ class ElevenLabsTtsProvider implements TtsProviderAdapter {
 
   @override
   Map<String, String> get availableVoices => const {
-        '21m00Tcm4TlvDq8ikWAM': 'Rachel — female, calm',
-        '29vD33N1CtxCmqQRPOHJ': 'Drew — male, confident',
-        'EXAVITQu4vr4xnSDxMaL': 'Sarah — female, soft',
-        'ErXwobaYiN019PkySvjV': 'Antoni — male, warm',
-        'MF3mGyEYCl7XYWbV9V6O': 'Elli — female, young',
-        'TxGEqnHWrfWFTfGW9XjX': 'Josh — male, deep',
+        '9BWtsMINqrJLrRacOk9x': 'Aria — female, expressive, engaging',
+        'CwhRBWXzGAHq8TQ4Fs17': 'Roger — male, confident, persuasive',
+        'EXAVITQu4vr4xnSDxMaL': 'Sarah — female, soft, expressive',
+        'SAz9YHcvj6GT2YYXdXww': 'River — non-binary, confident, modern',
+        'cjVigY5qzO86Huf0OWal': 'Eric — male, friendly, approachable',
+        'cgSgspJ2msm6clMCkdW9': 'Jessica — female, youthful, conversational',
+        'bIHbv24MWmeRgasZH58o': 'Will — male, warm, narrative',
+        'FGY2WhTYpPnrIDTdsKH5': 'Laura — female, clear, narration',
       };
 
   @override

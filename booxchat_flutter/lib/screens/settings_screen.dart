@@ -194,6 +194,49 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
               ],
+              if (settings.imageProvider == 'grok') ...[
+                const Divider(height: 1, color: Colors.black26),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: const Text(
+                    'Model',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SegmentedButton<String>(
+                    segments:
+                        SettingsProvider.grokModelNames.entries
+                            .map((e) => ButtonSegment(
+                                  value: e.key,
+                                  label: Text(
+                                    '${e.value} ${SettingsProvider.grokModelPrices[e.key]}',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ))
+                            .toList(),
+                    selected: {settings.grokModel},
+                    onSelectionChanged: (v) {
+                      settings.setGrokModel(v.first);
+                      EinkService.requestFullRefresh();
+                    },
+                    style: ButtonStyle(
+                      foregroundColor:
+                          WidgetStatePropertyAll(Colors.black),
+                      backgroundColor:
+                          WidgetStateProperty.resolveWith((states) {
+                        return states.contains(WidgetState.selected)
+                            ? Colors.black12
+                            : Colors.transparent;
+                      }),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (settings.availableTtsProviders.isNotEmpty) ...[
                 const Divider(height: 1, color: Colors.black26),
                 Padding(
@@ -298,6 +341,26 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+              if (settings.availableTtsProviders.isNotEmpty) ...[
+                const Divider(height: 1, color: Colors.black26),
+                ListTile(
+                  leading:
+                      const Icon(Icons.audiotrack, color: Colors.black),
+                  title: const Text('Audio',
+                      style: TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w500)),
+                  subtitle: const Text('View all generated audio'),
+                  trailing:
+                      const Icon(Icons.chevron_right, color: Colors.black54),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AudioGalleryScreen()),
+                    );
+                  },
+                ),
+              ],
               const Divider(height: 1, color: Colors.black26),
               ListTile(
                 leading:

@@ -12,11 +12,18 @@ class OpenAITtsProvider implements TtsProviderAdapter {
   @override
   Map<String, String> get availableVoices => const {
         'alloy': 'Alloy — neutral, balanced',
-        'echo': 'Echo — male, warm',
-        'fable': 'Fable — male, narrative',
-        'onyx': 'Onyx — male, deep',
-        'nova': 'Nova — female, friendly',
-        'shimmer': 'Shimmer — female, soft',
+        'ash': 'Ash — male, calm, professional',
+        'ballad': 'Ballad — male, smooth, melodic',
+        'cedar': 'Cedar — male, warm, grounded',
+        'coral': 'Coral — female, vibrant, warm',
+        'echo': 'Echo — male, resonant, steady',
+        'fable': 'Fable — male, expressive, narrative',
+        'marin': 'Marin — female, fresh, natural',
+        'nova': 'Nova — female, bright, friendly',
+        'onyx': 'Onyx — male, deep, authoritative',
+        'sage': 'Sage — female, calm, measured',
+        'shimmer': 'Shimmer — female, bright, gentle',
+        'verse': 'Verse — male, poetic, expressive',
       };
 
   @override
@@ -35,7 +42,7 @@ class OpenAITtsProvider implements TtsProviderAdapter {
             'Content-Type': 'application/json',
           },
           body: jsonEncode({
-            'model': 'tts-1',
+            'model': 'gpt-4o-mini-tts',
             'input': input,
             'voice': voice,
             'response_format': 'mp3',

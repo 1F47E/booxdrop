@@ -47,6 +47,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
       await _player.stop();
       setState(() => _playingPath = null);
     } else {
+      await _player.stop();
       await _player.setFilePath(path);
       await _player.play();
       setState(() => _playingPath = path);
@@ -75,7 +76,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
     if (confirmed == true) {
       if (_playingPath == path) {
         await _player.stop();
-        _playingPath = null;
+        setState(() => _playingPath = null);
       }
       await StorageService.deleteAudio(path);
       _refresh();
