@@ -1,14 +1,17 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/stroke.dart';
+import '../models/canvas_item.dart';
 import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/color_picker.dart';
 import '../widgets/drawing_canvas.dart';
 import '../widgets/stroke_picker.dart';
+import '../widgets/text_tool_dialog.dart';
 import 'gallery_screen.dart';
 import 'settings_screen.dart';
+
+enum _Tool { pen, text }
 
 class DrawingScreen extends StatefulWidget {
   const DrawingScreen({super.key});
@@ -18,69 +21,137 @@ class DrawingScreen extends StatefulWidget {
 }
 
 class _DrawingScreenState extends State<DrawingScreen> {
-  final List<Stroke> _strokes = [];
+  final List<CanvasStroke> _strokes = [];
+  final List<CanvasText> _texts = [];
   final GlobalKey _canvasKey = GlobalKey();
-  Stroke? _current;
+  ActiveStroke? _activeStroke;
   Color _color = Colors.black;
   double _strokeWidth = 6.0;
+  _Tool _tool = _Tool.pen;
   bool _saving = false;
 
-  bool get _hasStrokes => _strokes.isNotEmpty || _current != null;
+  bool get _hasContent =>
+      _strokes.isNotEmpty || _texts.isNotEmpty || _activeStroke != null;
+
+  Size? get _canvasSize {
+    final rb = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+    return rb?.size;
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    if (_tool != _Tool.pen) return;
+    setState(() {
+      _activeStroke = ActiveStroke(color: _color, width: _strokeWidth);
+      _activeStroke!.points.add(details.localPosition);
+    });
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_activeStroke == null) return;
+    setState(() => _activeStroke!.points.add(details.localPosition));
+  }
+
+  void _onPanEnd(DragEndDetails _) {
+    if (_activeStroke == null) return;
+    final size = _canvasSize;
+    if (size == null) return;
+
+    // Convert active stroke to normalized CanvasStroke
+    final normalized = _activeStroke!.points
+        .map((p) => CanvasStroke.normalize(p, size))
+        .toList();
+    setState(() {
+      _strokes.add(CanvasStroke(
+        colorValue: _activeStroke!.color.toARGB32(),
+        width: _activeStroke!.width,
+        points: normalized,
+      ));
+      _activeStroke = null;
+    });
+  }
+
+  void _onCanvasTap(TapUpDetails details) async {
+    if (_tool != _Tool.text) return;
+
+    final text = await showDialog<String>(
+      context: context,
+      builder: (_) => TextToolDialog(color: _color),
+    );
+    if (text == null || text.isEmpty) return;
+
+    final size = _canvasSize;
+    if (size == null) return;
+
+    setState(() {
+      _texts.add(CanvasText(
+        text: text,
+        colorValue: _color.toARGB32(),
+        x: details.localPosition.dx / size.width,
+        y: details.localPosition.dy / size.height,
+      ));
+    });
+  }
 
   Future<String?> _renderAndSave() async {
-    if (!_hasStrokes) return null;
+    if (!_hasContent) return null;
     setState(() => _saving = true);
 
     try {
-      const size = Size(1024, 1024);
+      const exportSize = Size(1024, 1024);
       final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder, Offset.zero & size);
+      final canvas = Canvas(recorder, Offset.zero & exportSize);
 
       canvas.drawRect(
-        Offset.zero & size,
-        Paint()..color = Colors.white,
-      );
+          Offset.zero & exportSize, Paint()..color = Colors.white);
 
-      final renderBox =
-          _canvasKey.currentContext?.findRenderObject() as RenderBox?;
-      final canvasSize = renderBox?.size ?? MediaQuery.of(context).size;
-      final scaleX = size.width / canvasSize.width;
-      final scaleY = size.height / canvasSize.height;
-
+      // Render strokes (already normalized)
       for (final stroke in _strokes) {
         if (stroke.points.isEmpty) continue;
-        final scaledWidth = stroke.width * ((scaleX + scaleY) / 2);
         final paint = Paint()
           ..color = stroke.color
-          ..strokeWidth = scaledWidth
+          ..strokeWidth = stroke.width
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
           ..style = PaintingStyle.stroke;
 
         if (stroke.points.length == 1) {
+          final pt = CanvasStroke.denormalize(stroke.points.first, exportSize);
           canvas.drawCircle(
-            Offset(stroke.points.first.dx * scaleX,
-                stroke.points.first.dy * scaleY),
-            scaledWidth / 2,
-            paint..style = PaintingStyle.fill,
-          );
+              pt, stroke.width / 2, paint..style = PaintingStyle.fill);
           continue;
         }
 
         final path = Path();
-        path.moveTo(
-            stroke.points.first.dx * scaleX, stroke.points.first.dy * scaleY);
+        final first =
+            CanvasStroke.denormalize(stroke.points.first, exportSize);
+        path.moveTo(first.dx, first.dy);
         for (var i = 1; i < stroke.points.length; i++) {
-          path.lineTo(
-              stroke.points[i].dx * scaleX, stroke.points[i].dy * scaleY);
+          final pt = CanvasStroke.denormalize(stroke.points[i], exportSize);
+          path.lineTo(pt.dx, pt.dy);
         }
         canvas.drawPath(path, paint);
       }
 
+      // Render text items
+      for (final t in _texts) {
+        final offset =
+            Offset(t.x * exportSize.width, t.y * exportSize.height);
+        final tp = TextPainter(
+          text: TextSpan(
+            text: t.text,
+            style: TextStyle(color: t.color, fontSize: t.fontSize),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+        tp.layout();
+        tp.paint(canvas, offset);
+      }
+
       final picture = recorder.endRecording();
-      final image =
-          await picture.toImage(size.width.toInt(), size.height.toInt());
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final image = await picture.toImage(
+          exportSize.width.toInt(), exportSize.height.toInt());
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return null;
 
       final bytes = byteData.buffer.asUint8List();
@@ -96,15 +167,13 @@ class _DrawingScreenState extends State<DrawingScreen> {
     if (path != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Drawing saved!'),
-          duration: Duration(seconds: 1),
-        ),
+            content: Text('Drawing saved!'), duration: Duration(seconds: 1)),
       );
     }
   }
 
   void _onNew() async {
-    if (!_hasStrokes) return;
+    if (!_hasContent) return;
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -113,12 +182,13 @@ class _DrawingScreenState extends State<DrawingScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'cancel'),
-            child: const Text('Cancel', style: TextStyle(color: Colors.black)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.black)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'discard'),
-            child:
-                const Text('Discard', style: TextStyle(color: Colors.black)),
+            child: const Text('Discard',
+                style: TextStyle(color: Colors.black)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'save'),
@@ -140,12 +210,13 @@ class _DrawingScreenState extends State<DrawingScreen> {
     }
     setState(() {
       _strokes.clear();
-      _current = null;
+      _texts.clear();
+      _activeStroke = null;
     });
   }
 
   void _onClear() async {
-    if (!_hasStrokes) return;
+    if (!_hasContent) return;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -153,11 +224,13 @@ class _DrawingScreenState extends State<DrawingScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.black)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.black)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear', style: TextStyle(color: Colors.black)),
+            child:
+                const Text('Clear', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -165,9 +238,31 @@ class _DrawingScreenState extends State<DrawingScreen> {
     if (confirm == true) {
       setState(() {
         _strokes.clear();
-        _current = null;
+        _texts.clear();
+        _activeStroke = null;
       });
     }
+  }
+
+  void _onUndo() {
+    setState(() {
+      // Remove last item (stroke or text, whichever was added most recently)
+      if (_strokes.isEmpty && _texts.isEmpty) return;
+      if (_texts.isEmpty) {
+        _strokes.removeLast();
+        return;
+      }
+      if (_strokes.isEmpty) {
+        _texts.removeLast();
+        return;
+      }
+      // Remove whichever was created more recently
+      if (_strokes.last.createdAt >= _texts.last.createdAt) {
+        _strokes.removeLast();
+      } else {
+        _texts.removeLast();
+      }
+    });
   }
 
   @override
@@ -189,20 +284,16 @@ class _DrawingScreenState extends State<DrawingScreen> {
           IconButton(
             icon: const Icon(Icons.photo_library, color: Colors.white),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const GalleryScreen()),
-              );
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const GalleryScreen()));
             },
             tooltip: 'Gallery',
           ),
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
             tooltip: 'Settings',
           ),
@@ -214,30 +305,14 @@ class _DrawingScreenState extends State<DrawingScreen> {
           Expanded(
             child: GestureDetector(
               key: _canvasKey,
-              onPanStart: (details) {
-                setState(() {
-                  _current = Stroke(color: _color, width: _strokeWidth);
-                  _current!.points.add(details.localPosition);
-                });
-              },
-              onPanUpdate: (details) {
-                if (_current != null) {
-                  setState(() {
-                    _current!.points.add(details.localPosition);
-                  });
-                }
-              },
-              onPanEnd: (_) {
-                if (_current != null) {
-                  setState(() {
-                    _strokes.add(_current!);
-                    _current = null;
-                  });
-                }
-              },
+              onPanStart: _onPanStart,
+              onPanUpdate: _onPanUpdate,
+              onPanEnd: _onPanEnd,
+              onTapUp: _onCanvasTap,
               child: DrawingCanvas(
                 strokes: _strokes,
-                current: _current,
+                texts: _texts,
+                activeStroke: _activeStroke,
               ),
             ),
           ),
@@ -259,39 +334,65 @@ class _DrawingScreenState extends State<DrawingScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    StrokePicker(
-                      selected: _strokeWidth,
-                      onChanged: (w) => setState(() => _strokeWidth = w),
+                    // Tool toggle: pen / text
+                    ToggleButtons(
+                      isSelected: [
+                        _tool == _Tool.pen,
+                        _tool == _Tool.text
+                      ],
+                      onPressed: (i) => setState(
+                          () => _tool = i == 0 ? _Tool.pen : _Tool.text),
+                      borderColor: Colors.black26,
+                      selectedBorderColor: Colors.black,
+                      selectedColor: Colors.white,
+                      fillColor: Colors.black,
+                      color: Colors.black,
+                      constraints:
+                          const BoxConstraints(minWidth: 40, minHeight: 40),
+                      children: const [
+                        Icon(Icons.edit, size: 20),
+                        Icon(Icons.text_fields, size: 20),
+                      ],
                     ),
+
+                    if (_tool == _Tool.pen)
+                      StrokePicker(
+                        selected: _strokeWidth,
+                        onChanged: (w) =>
+                            setState(() => _strokeWidth = w),
+                      ),
+
                     IconButton(
                       icon: const Icon(Icons.undo, color: Colors.black),
-                      onPressed: _strokes.isEmpty
+                      onPressed: (_strokes.isEmpty && _texts.isEmpty)
                           ? null
-                          : () => setState(() => _strokes.removeLast()),
+                          : _onUndo,
                       tooltip: 'Undo',
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline,
                           color: Colors.black),
-                      onPressed: _hasStrokes ? _onClear : null,
+                      onPressed: _hasContent ? _onClear : null,
                       tooltip: 'Clear',
                     ),
                     IconButton(
-                      icon: const Icon(Icons.note_add, color: Colors.black),
-                      onPressed: _hasStrokes ? _onNew : null,
+                      icon:
+                          const Icon(Icons.note_add, color: Colors.black),
+                      onPressed: _hasContent ? _onNew : null,
                       tooltip: 'New',
                     ),
                     SizedBox(
                       width: 48,
                       height: 48,
                       child: Material(
-                        color: _hasStrokes && !_saving
+                        color: _hasContent && !_saving
                             ? Colors.black
                             : Colors.black38,
                         borderRadius: BorderRadius.circular(8),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(8),
-                          onTap: _hasStrokes && !_saving ? _onSave : null,
+                          onTap:
+                              _hasContent && !_saving ? _onSave : null,
                           child: const Icon(Icons.save,
                               color: Colors.white, size: 22),
                         ),
