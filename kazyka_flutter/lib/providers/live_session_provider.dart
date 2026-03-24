@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/canvas_item.dart';
 import '../services/collaboration_transport.dart';
 
@@ -49,6 +50,9 @@ class LiveSessionProvider extends ChangeNotifier {
   // Canvas items from remote
   final List<CanvasStroke> remoteStrokes = [];
   final List<CanvasText> remoteTexts = [];
+
+  // Callback for when remote host clears the canvas
+  VoidCallback? onRemoteClear;
 
   LiveSessionState get state => _state;
   String? get sessionId => _sessionId;
@@ -135,6 +139,61 @@ class LiveSessionProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> resumeSession({
+    required String deviceId,
+    required String displayName,
+    required String serverUrl,
+  }) async {
+    // Check for cached session
+    final prefs = await SharedPreferences.getInstance();
+    final cachedSessionId = prefs.getString('live_session_id');
+    if (cachedSessionId == null) return;
+
+    _state = LiveSessionState.joining;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _transport.connect(serverUrl);
+      _listenToEvents();
+
+      _transport.send({
+        'type': 'hello',
+        'payload': {
+          'device_id': deviceId,
+          'display_name': displayName,
+          'platform': 'android',
+          'app_version': '1.0.0',
+        },
+      });
+
+      _transport.send({
+        'type': 'resume_session',
+        'payload': {
+          'session_id': cachedSessionId,
+          'device_id': deviceId,
+        },
+      });
+    } catch (e) {
+      // Resume failed — clear cache and go idle
+      await prefs.remove('live_session_id');
+      _state = LiveSessionState.idle;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _cacheSessionId() async {
+    if (_sessionId != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('live_session_id', _sessionId!);
+    }
+  }
+
+  Future<void> _clearSessionCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('live_session_id');
+  }
+
   Future<void> leaveSession() async {
     _reconnectTimer?.cancel();
     if (_sessionId != null) {
@@ -145,6 +204,7 @@ class LiveSessionProvider extends ChangeNotifier {
     }
     await _transport.disconnect();
     _eventSub?.cancel();
+    await _clearSessionCache();
     _reset();
     notifyListeners();
   }
@@ -215,6 +275,16 @@ class LiveSessionProvider extends ChangeNotifier {
         _joinCode = payload?['join_code'] as String?;
         _role = payload?['role'] as String?;
         _state = LiveSessionState.waiting;
+        _cacheSessionId();
+        notifyListeners();
+        break;
+
+      case 'session_resumed':
+        _sessionId = payload?['session_id'] as String?;
+        _joinCode = payload?['join_code'] as String?;
+        _role = payload?['role'] as String?;
+        _state = LiveSessionState.connected;
+        _cacheSessionId();
         notifyListeners();
         break;
 
@@ -299,6 +369,7 @@ class LiveSessionProvider extends ChangeNotifier {
       case 'clear':
         remoteStrokes.clear();
         remoteTexts.clear();
+        onRemoteClear?.call();
         notifyListeners();
         break;
 

@@ -34,6 +34,24 @@ class _DrawingScreenState extends State<DrawingScreen> {
   _Tool _tool = _Tool.pen;
   bool _saving = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Wire up remote clear callback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final session = context.read<LiveSessionProvider>();
+      session.onRemoteClear = () {
+        if (mounted) {
+          setState(() {
+            _strokes.clear();
+            _texts.clear();
+            _activeStroke = null;
+          });
+        }
+      };
+    });
+  }
+
   bool get _hasContent =>
       _strokes.isNotEmpty || _texts.isNotEmpty || _activeStroke != null;
 
@@ -409,24 +427,45 @@ class _DrawingScreenState extends State<DrawingScreen> {
                             setState(() => _strokeWidth = w),
                       ),
 
-                    IconButton(
-                      icon: const Icon(Icons.undo, color: Colors.black),
-                      onPressed: (_strokes.isEmpty && _texts.isEmpty)
-                          ? null
-                          : _onUndo,
-                      tooltip: 'Undo',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.black),
-                      onPressed: _hasContent ? _onClear : null,
-                      tooltip: 'Clear',
-                    ),
-                    IconButton(
-                      icon:
-                          const Icon(Icons.note_add, color: Colors.black),
-                      onPressed: _hasContent ? _onNew : null,
-                      tooltip: 'New',
+                    Consumer<LiveSessionProvider>(
+                      builder: (_, session, _) {
+                        final live = session.isLive;
+                        final canClear =
+                            _hasContent && (!live || session.isHost);
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.undo,
+                                  color: Colors.black),
+                              onPressed: live ||
+                                      (_strokes.isEmpty && _texts.isEmpty)
+                                  ? null
+                                  : _onUndo,
+                              tooltip: 'Undo',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: Colors.black),
+                              onPressed: canClear
+                                  ? () {
+                                      _onClear();
+                                      if (live) session.sendClear();
+                                    }
+                                  : null,
+                              tooltip: 'Clear',
+                            ),
+                            if (!live)
+                              IconButton(
+                                icon: const Icon(Icons.note_add,
+                                    color: Colors.black),
+                                onPressed:
+                                    _hasContent ? _onNew : null,
+                                tooltip: 'New',
+                              ),
+                          ],
+                        );
+                      },
                     ),
                     SizedBox(
                       width: 48,

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazyka/providers/live_session_provider.dart';
 import 'package:kazyka/services/fake_collaboration_transport.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('LiveSessionProvider', () {
@@ -8,6 +9,7 @@ void main() {
     late LiveSessionProvider provider;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       transport = FakeCollaborationTransport();
       provider = LiveSessionProvider(transport);
     });
