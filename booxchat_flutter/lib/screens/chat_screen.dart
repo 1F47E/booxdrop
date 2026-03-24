@@ -91,7 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              provider.currentSession?.title ?? 'BooxChat',
+              provider.currentSession?.title ?? 'Smarty Pants',
               style: const TextStyle(fontSize: 18, color: Colors.white),
               overflow: TextOverflow.ellipsis,
             ),

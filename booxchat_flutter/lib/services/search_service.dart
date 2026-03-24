@@ -58,7 +58,7 @@ class SearchService {
     try {
       final uri = Uri.parse(url);
       final resp = await http.get(uri, headers: {
-        'User-Agent': 'BooxChat/1.0',
+        'User-Agent': 'SmartyPants/1.0',
       }).timeout(const Duration(seconds: 15));
 
       if (resp.statusCode != 200) {
