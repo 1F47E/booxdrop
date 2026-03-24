@@ -216,6 +216,7 @@ class ChatProvider extends ChangeNotifier {
       final history = [_buildSystemPrompt(), ..._messages];
       final response = await OpenAIService.sendWithTools(
         history,
+        kidsMode: _settings.kidsMode,
         onToolCall: (status) {
           _toolStatus = status;
           notifyListeners();

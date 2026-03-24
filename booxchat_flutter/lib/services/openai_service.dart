@@ -118,11 +118,64 @@ class OpenAIService {
     'generate_image': 'Drawing an image...',
   };
 
+  static const _kidsSearchLabels = [
+    'Asking the wise owl...',
+    'Checking with the brainy robot...',
+    'Peeking into the magic book...',
+    'Sending a carrier pigeon...',
+    'Asking the space hamster...',
+    'Consulting the cookie oracle...',
+    'Phoning a friendly dinosaur...',
+    'Searching the treasure map...',
+    'Asking Professor Penguin...',
+    'Looking through the magic telescope...',
+  ];
+
+  static const _kidsFetchLabels = [
+    'Reading the secret scroll...',
+    'Unfolding the treasure map...',
+    'Opening the magic envelope...',
+    'Decoding the alien message...',
+    'Reading the wizard\'s notes...',
+    'Flipping through the adventure book...',
+    'Checking the pirate\'s logbook...',
+    'Peeking at the dragon\'s diary...',
+    'Unrolling the ancient papyrus...',
+    'Scanning the robot\'s memory...',
+  ];
+
+  static const _kidsImageLabels = [
+    'Painting with rainbow brushes...',
+    'The art hamster is drawing...',
+    'Mixing magical colors...',
+    'Waving the crayon wand...',
+    'The pixel fairy is creating...',
+    'Doodling something awesome...',
+    'The robot artist is busy...',
+    'Sprinkling creative dust...',
+    'Drawing with invisible ink...',
+    'The magic pencil is working...',
+  ];
+
+  static String _getToolLabel(String name, {bool kidsMode = false}) {
+    if (!kidsMode) return _toolLabels[name] ?? 'Using $name...';
+
+    final list = switch (name) {
+      'web_search' => _kidsSearchLabels,
+      'fetch_page' => _kidsFetchLabels,
+      'generate_image' => _kidsImageLabels,
+      _ => null,
+    };
+    if (list == null) return 'Doing something magical...';
+    return list[DateTime.now().microsecond % list.length];
+  }
+
   /// Sends messages with tool support. Loops until the model produces a
   /// final text response or the iteration limit is reached.
   static Future<ChatResponse> sendWithTools(
     List<Message> messages, {
     void Function(String status)? onToolCall,
+    bool kidsMode = false,
   }) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
 
@@ -176,7 +229,7 @@ class OpenAIService {
           final callId = tc['id'] as String;
 
           String result;
-          onToolCall?.call(_toolLabels[name] ?? 'Using $name...');
+          onToolCall?.call(_getToolLabel(name, kidsMode: kidsMode));
 
           switch (name) {
             case 'web_search':
