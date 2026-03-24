@@ -24,7 +24,7 @@ class ImageService {
             'prompt': prompt,
             'n': 1,
             'size': size,
-            'output_format': 'b64_json',
+            'quality': 'low',
           }),
         )
         .timeout(const Duration(seconds: 120));
