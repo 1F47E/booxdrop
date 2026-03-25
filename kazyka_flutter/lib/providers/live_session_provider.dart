@@ -308,7 +308,10 @@ class LiveSessionProvider extends ChangeNotifier {
         _sessionId = payload?['session_id'] as String?;
         _joinCode = payload?['join_code'] as String?;
         _role = payload?['role'] as String?;
-        _state = LiveSessionState.waiting;
+        // Host waits for peer; guest stays in joining until peer_joined arrives
+        _state = _role == 'host'
+            ? LiveSessionState.waiting
+            : LiveSessionState.joining;
         _cacheSessionId();
         notifyListeners();
         break;

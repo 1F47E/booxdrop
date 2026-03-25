@@ -17,13 +17,19 @@ class Message {
     this.audioPath,
   }) : id = id ?? '${DateTime.now().microsecondsSinceEpoch}_${role.hashCode}';
 
-  Message copyWith({String? audioPath}) => Message(
+  Message copyWith({
+    String? content,
+    String? imagePath,
+    String? audioPath,
+    List<String>? quickReplies,
+  }) =>
+      Message(
         id: id,
         role: role,
-        content: content,
-        imagePath: imagePath,
+        content: content ?? this.content,
+        imagePath: imagePath ?? this.imagePath,
         toolCallId: toolCallId,
-        quickReplies: quickReplies,
+        quickReplies: quickReplies ?? this.quickReplies,
         audioPath: audioPath ?? this.audioPath,
       );
 

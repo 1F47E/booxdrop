@@ -60,6 +60,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete audio?'),
+        content: const Text('This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -69,7 +70,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child:
-                const Text('Delete', style: TextStyle(color: Colors.black)),
+                const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

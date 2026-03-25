@@ -48,6 +48,9 @@ class NanoBananaProvider implements ImageProviderAdapter {
   Future<String> edit(
       {required String imagePath, required String instruction}) async {
     final file = File(imagePath);
+    if (!await file.exists()) {
+      throw Exception('Image file not found: $imagePath');
+    }
     final bytes = await file.readAsBytes();
     final b64 = base64Encode(bytes);
 

@@ -5,7 +5,11 @@ import 'tts_provider.dart';
 
 class TtsService {
   static TtsProviderAdapter getProvider(SettingsProvider settings) {
-    switch (settings.ttsProvider) {
+    return getProviderByKey(settings.ttsProvider);
+  }
+
+  static TtsProviderAdapter getProviderByKey(String key) {
+    switch (key) {
       case 'elevenlabs':
         return ElevenLabsTtsProvider();
       case 'openai':

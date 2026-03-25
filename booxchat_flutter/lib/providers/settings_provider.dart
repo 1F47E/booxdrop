@@ -4,6 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/tts_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  static const chatModelNames = {
+    'gpt-5.4': 'GPT-5.4',
+    'gpt-5.4-mini': 'GPT-5.4 Mini',
+    'gpt-4.1': 'GPT-4.1',
+    'gpt-4.1-mini': 'GPT-4.1 Mini',
+    'gpt-4.1-nano': 'GPT-4.1 Nano',
+  };
   static const imageProviderNames = {
     'nano_banana': 'Nano Banana',
     'openai': 'OpenAI',
@@ -50,6 +57,7 @@ class SettingsProvider extends ChangeNotifier {
         if (hasElevenLabsKey) 'elevenlabs',
       ];
 
+  static const _kChatModel = 'settings_chat_model';
   static const _kKidsMode = 'settings_kids_mode';
   static const _kKidsAge = 'settings_kids_age';
   static const _kFontSize = 'settings_font_size';
@@ -59,6 +67,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _kTtsProvider = 'settings_tts_provider';
   static const _kTtsVoice = 'settings_tts_voice';
 
+  String _chatModel = 'gpt-5.4-mini';
   bool _kidsMode = false;
   int _kidsAge = 7;
   double _fontSize = 17; // default +2 from original 15
@@ -68,6 +77,7 @@ class SettingsProvider extends ChangeNotifier {
   String _ttsProvider = 'openai';
   String _ttsVoice = 'nova';
 
+  String get chatModel => _chatModel;
   bool get kidsMode => _kidsMode;
   int get kidsAge => _kidsAge;
   double get fontSize => _kidsMode ? (_fontSize + 5) : _fontSize;
@@ -99,6 +109,7 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    _chatModel = prefs.getString(_kChatModel) ?? 'gpt-5.4-mini';
     _kidsMode = prefs.getBool(_kKidsMode) ?? false;
     _kidsAge = prefs.getInt(_kKidsAge) ?? 7;
     _fontSize = prefs.getDouble(_kFontSize) ?? 17;
@@ -109,6 +120,13 @@ class SettingsProvider extends ChangeNotifier {
     _ttsProvider = prefs.getString(_kTtsProvider) ?? 'openai';
     _ttsVoice = prefs.getString(_kTtsVoice) ?? 'nova';
     notifyListeners();
+  }
+
+  Future<void> setChatModel(String model) async {
+    _chatModel = model;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kChatModel, model);
   }
 
   Future<void> setKidsMode(bool value) async {
@@ -172,6 +190,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> saveAll({
+    required String chatModel,
     required bool kidsMode,
     required int kidsAge,
     required double fontSize,
@@ -181,6 +200,7 @@ class SettingsProvider extends ChangeNotifier {
     required String ttsProvider,
     required String ttsVoice,
   }) async {
+    _chatModel = chatModel;
     _kidsMode = kidsMode;
     _kidsAge = kidsAge;
     _fontSize = fontSize;
@@ -192,6 +212,7 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kChatModel, chatModel);
     await prefs.setBool(_kKidsMode, kidsMode);
     await prefs.setInt(_kKidsAge, kidsAge);
     await prefs.setDouble(_kFontSize, fontSize);

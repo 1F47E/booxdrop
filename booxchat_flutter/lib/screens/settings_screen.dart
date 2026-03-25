@@ -18,6 +18,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   // Draft state
+  String _chatModel = 'gpt-5.4-mini';
   bool _kidsMode = false;
   int _kidsAge = 7;
   double _fontSize = 17;
@@ -32,6 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     final s = context.read<SettingsProvider>();
+    _chatModel = s.chatModel;
     _kidsMode = s.kidsMode;
     _kidsAge = s.kidsAge;
     _fontSize = s.rawFontSize;
@@ -68,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _save() async {
     final s = context.read<SettingsProvider>();
     await s.saveAll(
+      chatModel: _chatModel,
       kidsMode: _kidsMode,
       kidsAge: _kidsAge,
       fontSize: _fontSize,
@@ -137,7 +140,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Expanded(
               child: ListView(
                 children: [
+                  // --- Chat Model ---
+                  const Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Text('Chat Model',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w600)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DropdownButton<String>(
+                      value: _chatModel,
+                      isExpanded: true,
+                      underline: Container(height: 1, color: Colors.black26),
+                      items: SettingsProvider.chatModelNames.entries
+                          .map((e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value,
+                                    style: const TextStyle(fontSize: 15)),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _chatModel = v);
+                          _markDirty();
+                        }
+                      },
+                    ),
+                  ),
+
                   // --- Kids Mode ---
+                  const Divider(height: 1, color: Colors.black26),
                   SwitchListTile(
                     title: const Text('Kids Mode',
                         style: TextStyle(
@@ -355,8 +389,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onSelectionChanged: (v) {
                             setState(() {
                               _ttsProvider = v.first;
-                              // Reset voice to first available
-                              final prov = TtsService.getProvider(s);
+                              // Reset voice to first available for NEW provider
+                              final prov =
+                                  TtsService.getProviderByKey(v.first);
                               _ttsVoice =
                                   prov.availableVoices.keys.first;
                             });
@@ -388,7 +423,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18, fontWeight: FontWeight.w600)),
                     ),
                     ...() {
-                      final provider = TtsService.getProvider(s);
+                      final provider =
+                          TtsService.getProviderByKey(_ttsProvider);
                       return provider.availableVoices.entries.map((e) {
                         final isSelected = e.key == _ttsVoice;
                         return ListTile(

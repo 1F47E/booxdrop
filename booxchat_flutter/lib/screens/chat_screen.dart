@@ -9,6 +9,7 @@ import '../models/message.dart';
 import '../providers/chat_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
+import '../services/image_picker_service.dart';
 import 'drawing_pad_screen.dart';
 import 'settings_screen.dart';
 
@@ -23,6 +24,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  String? _pendingImagePath;
   ChatProvider? _chatProvider;
 
   @override
@@ -59,34 +61,41 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void _confirmDeleteChat(BuildContext context, ChatProvider provider) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete chat?'),
-        content: const Text('This will permanently delete this conversation.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.black)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              provider.deleteSession(provider.currentSessionId!);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.black)),
-          ),
-        ],
-      ),
-    );
+  void _confirmDeleteChat(BuildContext context, ChatProvider provider,
+      {String? sessionId}) {
+    final id = sessionId ?? provider.currentSessionId;
+    if (id == null) return;
+    provider.countSessionMedia(id).then((mediaCount) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => _DeleteChatDialog(
+          mediaCount: mediaCount,
+          onDelete: (deleteMedia) {
+            Navigator.pop(ctx);
+            provider.deleteSession(id, deleteMedia: deleteMedia);
+          },
+        ),
+      );
+    });
   }
 
   void _send(ChatProvider provider) {
-    final text = _controller.text;
-    if (text.trim().isEmpty || provider.isLoading) return;
+    final text = _controller.text.trim();
+    final image = _pendingImagePath;
+
+    // Allow sending: text only, image only, or both
+    if (text.isEmpty && image == null) return;
+    if (provider.isLoading) return;
+
     _controller.clear();
-    provider.sendMessage(text);
+    setState(() => _pendingImagePath = null);
+
+    if (image != null) {
+      provider.sendMessageWithImage(text.isEmpty ? '' : text, image);
+    } else {
+      provider.sendMessage(text);
+    }
   }
 
   @override
@@ -205,6 +214,39 @@ class _ChatScreenState extends State<ChatScreen> {
 
               const Divider(height: 1, thickness: 1, color: Colors.black),
 
+              // Image preview strip
+              if (_pendingImagePath != null)
+                Container(
+                  color: Colors.grey[100],
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.file(
+                          File(_pendingImagePath!),
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text('Photo attached',
+                            style: TextStyle(
+                                fontSize: 13, color: Colors.black54)),
+                      ),
+                      GestureDetector(
+                        onTap: () =>
+                            setState(() => _pendingImagePath = null),
+                        child: const Icon(Icons.close,
+                            size: 18, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Input bar
               Padding(
                 padding: const EdgeInsets.all(8),
@@ -236,6 +278,25 @@ class _ChatScreenState extends State<ChatScreen> {
                                 }
                               },
                         tooltip: 'Draw',
+                      ),
+                    ),
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: IconButton(
+                        icon: const Icon(Icons.photo_library,
+                            color: Colors.black),
+                        onPressed: provider.isLoading
+                            ? null
+                            : () async {
+                                final path =
+                                    await ImagePickerService.pickFromGallery();
+                                if (path != null && mounted) {
+                                  setState(
+                                      () => _pendingImagePath = path);
+                                }
+                              },
+                        tooltip: 'Attach photo',
                       ),
                     ),
                     Expanded(
@@ -466,7 +527,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
                   borderRadius: BorderRadius.circular(8),
                   child: Image.file(
                     File(message.imagePath!),
-                    width: 256,
+                    width: 160,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Text(
                       '[Image not found]',
@@ -699,31 +760,14 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
                                 color: Colors.black54),
                           ),
                           confirmDismiss: (_) async {
-                            return await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Delete chat?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(ctx, false),
-                                    child: const Text('Cancel',
-                                        style: TextStyle(
-                                            color: Colors.black)),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(ctx, true),
-                                    child: const Text('Delete',
-                                        style: TextStyle(
-                                            color: Colors.black)),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          onDismissed: (_) {
-                            widget.provider.deleteSession(session.id);
+                            final state = context
+                                .findAncestorStateOfType<_ChatScreenState>();
+                            if (state != null) {
+                              state._confirmDeleteChat(
+                                  context, widget.provider,
+                                  sessionId: session.id);
+                            }
+                            return false;
                           },
                           child: ListTile(
                             title: Text(
@@ -790,6 +834,71 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${dt.day}/${dt.month}/${dt.year}';
+  }
+}
+
+class _DeleteChatDialog extends StatefulWidget {
+  final int mediaCount;
+  final void Function(bool deleteMedia) onDelete;
+
+  const _DeleteChatDialog({
+    required this.mediaCount,
+    required this.onDelete,
+  });
+
+  @override
+  State<_DeleteChatDialog> createState() => _DeleteChatDialogState();
+}
+
+class _DeleteChatDialogState extends State<_DeleteChatDialog> {
+  bool _deleteMedia = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Delete chat?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('This will permanently delete this conversation.'),
+          if (widget.mediaCount > 0) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _deleteMedia,
+                    onChanged: (v) =>
+                        setState(() => _deleteMedia = v ?? false),
+                    activeColor: Colors.black,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Also delete images and audio (${widget.mediaCount} file${widget.mediaCount == 1 ? '' : 's'})',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: Colors.black)),
+        ),
+        TextButton(
+          onPressed: () => widget.onDelete(_deleteMedia),
+          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    );
   }
 }
 

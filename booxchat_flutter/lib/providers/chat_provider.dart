@@ -51,7 +51,7 @@ class ChatProvider extends ChangeNotifier {
 
   Message _buildSystemPrompt() {
     final buf = StringBuffer();
-    buf.writeln('You are a helpful assistant on a Boox e-ink tablet device.');
+    buf.writeln('You are a helpful assistant on a small tablet.');
     buf.writeln();
 
     // Language mirroring (always active)
@@ -92,9 +92,8 @@ class ChatProvider extends ChangeNotifier {
     }
     buf.writeln();
     buf.writeln('Guidelines:');
-    buf.writeln('- Keep responses concise — the user is reading on an e-ink screen.');
+    buf.writeln('- Keep responses concise — the user is reading on a small screen.');
     buf.writeln('- Use tools proactively when they would help answer the question.');
-    buf.writeln('- Images will display in grayscale on the e-ink screen.');
     buf.writeln('- You have two image tools: generate_image (create new) and edit_image (modify existing).');
     buf.writeln('- Use edit_image when the user wants to change, adjust, or modify a previously generated image.');
     buf.writeln('- Use generate_image only for brand new images with no prior image to edit.');
@@ -229,24 +228,39 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteSession(String sessionId) async {
-    // Flush pending save so disk state matches in-memory state
-    _saveTimer?.cancel();
-    if (_currentSessionId == sessionId) {
-      await _persistSession();
-    }
-
-    // Delete images and audio from this session
+  /// Returns the number of media files (images + audio) in a session.
+  Future<int> countSessionMedia(String sessionId) async {
     final json = await StorageService.loadSessionMessages(sessionId);
-    if (json != null) {
-      final data = jsonDecode(json) as Map<String, dynamic>;
-      final msgList = data['messages'] as List;
-      for (final m in msgList) {
-        final map = m as Map<String, dynamic>;
-        final imgPath = map['imagePath'] as String?;
-        if (imgPath != null) await StorageService.deleteImage(imgPath);
-        final audPath = map['audioPath'] as String?;
-        if (audPath != null) await StorageService.deleteAudio(audPath);
+    if (json == null) return 0;
+    final data = jsonDecode(json) as Map<String, dynamic>;
+    final msgList = data['messages'] as List;
+    var count = 0;
+    for (final m in msgList) {
+      final map = m as Map<String, dynamic>;
+      if (map['imagePath'] != null) count++;
+      if (map['audioPath'] != null) count++;
+    }
+    return count;
+  }
+
+  Future<void> deleteSession(String sessionId,
+      {bool deleteMedia = false}) async {
+    // Flush any pending save so disk state matches in-memory state
+    _saveTimer?.cancel();
+    await _persistSession();
+
+    if (deleteMedia) {
+      final json = await StorageService.loadSessionMessages(sessionId);
+      if (json != null) {
+        final data = jsonDecode(json) as Map<String, dynamic>;
+        final msgList = data['messages'] as List;
+        for (final m in msgList) {
+          final map = m as Map<String, dynamic>;
+          final imgPath = map['imagePath'] as String?;
+          if (imgPath != null) await StorageService.deleteImage(imgPath);
+          final audPath = map['audioPath'] as String?;
+          if (audPath != null) await StorageService.deleteAudio(audPath);
+        }
       }
     }
     await StorageService.deleteSessionData(sessionId);
@@ -280,9 +294,14 @@ class ChatProvider extends ChangeNotifier {
         final firstUserMsg =
             _messages.where((m) => m.role == 'user').firstOrNull;
         if (firstUserMsg != null) {
-          final title = firstUserMsg.content;
-          _currentSession!.title =
-              title.length > 40 ? '${title.substring(0, 40)}...' : title;
+          var title = firstUserMsg.content;
+          if (title.isEmpty && firstUserMsg.imagePath != null) {
+            title = 'Photo';
+          }
+          if (title.isNotEmpty) {
+            _currentSession!.title =
+                title.length > 40 ? '${title.substring(0, 40)}...' : title;
+          }
         }
       }
       await _saveSessions();

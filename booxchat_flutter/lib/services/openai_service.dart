@@ -21,7 +21,6 @@ class ChatResponse {
 
 class OpenAIService {
   static const _apiUrl = 'https://api.openai.com/v1/chat/completions';
-  static const _model = 'gpt-4o';
   static const _maxToolIterations = 5;
 
   static const _tools = [
@@ -236,8 +235,13 @@ class OpenAIService {
       if (m.role == 'user' && m.imagePath != null) {
         // Multimodal user message: text + image for GPT-4o vision
         try {
-          final bytes = await File(m.imagePath!).readAsBytes();
+          final imgFile = File(m.imagePath!);
+          final bytes = await imgFile.readAsBytes();
           final b64 = base64Encode(bytes);
+          final lower = m.imagePath!.toLowerCase();
+          final mime = lower.endsWith('.jpg') || lower.endsWith('.jpeg')
+              ? 'image/jpeg'
+              : 'image/png';
           conversation.add({
             'role': 'user',
             'content': [
@@ -245,7 +249,7 @@ class OpenAIService {
               {
                 'type': 'image_url',
                 'image_url': {
-                  'url': 'data:image/png;base64,$b64',
+                  'url': 'data:$mime;base64,$b64',
                   'detail': 'auto',
                 },
               },
@@ -278,14 +282,17 @@ class OpenAIService {
         ..._tools,
         if (settings.availableTtsProviders.isNotEmpty) _ttsTool,
       ];
+      final model = settings.chatModel;
+      final isReasoning = model.startsWith('gpt-5');
       final body = <String, dynamic>{
-        'model': _model,
+        'model': model,
         'messages': conversation,
-        'temperature': 0.7,
         'tools': tools,
+        if (isReasoning) 'reasoning_effort': 'medium',
+        if (!isReasoning) 'temperature': 0.7,
       };
 
-      _log.info('chat', 'Sending ${conversation.length} msgs to GPT-4o');
+      _log.info('chat', 'Sending ${conversation.length} msgs to $model');
       final sw = Stopwatch()..start();
       final response = await http
           .post(
@@ -300,7 +307,7 @@ class OpenAIService {
       sw.stop();
 
       if (response.statusCode != 200) {
-        _log.error('chat', 'GPT-4o HTTP ${response.statusCode}');
+        _log.error('chat', '$model HTTP ${response.statusCode}');
         throw Exception(
             'OpenAI error ${response.statusCode}: ${response.body}');
       }
@@ -309,7 +316,7 @@ class OpenAIService {
       final choice = (data['choices'] as List).first as Map<String, dynamic>;
       final finishReason = choice['finish_reason'] as String;
       final msg = choice['message'] as Map<String, dynamic>;
-      _log.debug('chat', 'GPT-4o ${sw.elapsedMilliseconds}ms, reason: $finishReason');
+      _log.debug('chat', '$model ${sw.elapsedMilliseconds}ms, reason: $finishReason');
 
       if (finishReason == 'tool_calls') {
         // Append the assistant message (with tool_calls) to conversation
