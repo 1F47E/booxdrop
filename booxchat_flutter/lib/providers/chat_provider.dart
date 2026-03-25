@@ -389,7 +389,9 @@ class ChatProvider extends ChangeNotifier {
     final idx =
         _messages.lastIndexWhere((m) => m.status == MessageStatus.failed);
     if (idx < 0 || _isLoading) return;
-    _cancelAutoRetry();
+    // Cancel timer but preserve retry attempt count for backoff
+    _retryTimer?.cancel();
+    _retryTimer = null;
     // Mark as sent (optimistic)
     final msg = _messages[idx].copyWith(status: MessageStatus.sent);
     _messages[idx] = msg;
@@ -399,9 +401,12 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void _startAutoRetry() {
-    if (_retryAttempt >= _retryDelays.length) return;
+    if (_retryAttempt >= _retryDelays.length) {
+      _log.info('chat', 'Max retry attempts reached');
+      return;
+    }
     final delay = _retryDelays[_retryAttempt];
-    _log.info('chat', 'Auto-retry in ${delay}s (attempt ${_retryAttempt + 1})');
+    _log.info('chat', 'Auto-retry in ${delay}s (attempt ${_retryAttempt + 1}/${_retryDelays.length})');
     _retryTimer = Timer(Duration(seconds: delay), () {
       _retryAttempt++;
       if (_isOnline) {
@@ -409,7 +414,7 @@ class ChatProvider extends ChangeNotifier {
         retryLastFailed();
       } else {
         _log.info('chat', 'Offline, skipping retry $_retryAttempt');
-        _startAutoRetry(); // Schedule next attempt
+        _startAutoRetry();
       }
     });
   }

@@ -18,7 +18,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   // Draft state
-  String _chatModel = 'gpt-5.4-mini';
+  String _chatModel = 'gpt-4.1';
   bool _kidsMode = false;
   int _kidsAge = 7;
   double _fontSize = 17;
