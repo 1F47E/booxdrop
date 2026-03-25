@@ -101,8 +101,9 @@ class ChatProvider extends ChangeNotifier {
     buf.writeln('- You have two image tools: generate_image (create new) and edit_image (modify existing).');
     buf.writeln('- Use edit_image when the user wants to change, adjust, or modify a previously generated image.');
     buf.writeln('- Use generate_image only for brand new images with no prior image to edit.');
-    buf.writeln('- When generating or editing images, do NOT add any text commentary — '
-        'the image is shown directly to the user.');
+    buf.writeln('- IMPORTANT: When you call generate_image or edit_image, respond with ONLY '
+        'an empty string. Do NOT add any text like "Here is your image" or describe what '
+        'you created. The image is shown directly to the user. Your text response must be empty.');
     if (_settings.availableTtsProviders.isNotEmpty) {
       buf.writeln('- When using text_to_speech, write natural spoken prose — no bullet points or markdown.');
       buf.writeln('- After text_to_speech, do NOT repeat the spoken text. Just acknowledge briefly.');
@@ -352,9 +353,12 @@ class ChatProvider extends ChangeNotifier {
         },
       );
       final parsed = _parseQuickReplies(response.content);
+      // Strip text when image was generated — show image only
+      final content =
+          response.imagePath != null ? '' : parsed.content;
       _messages.add(Message(
         role: 'assistant',
-        content: parsed.content,
+        content: content,
         imagePath: response.imagePath,
         audioPath: response.audioPath,
         quickReplies: parsed.quickReplies,
