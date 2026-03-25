@@ -6,7 +6,8 @@ import 'collaboration_transport.dart';
 /// Real WebSocket transport for live drawing sessions.
 class WebSocketCollaborationTransport implements CollaborationTransport {
   WebSocketChannel? _channel;
-  final _controller = StreamController<Map<String, dynamic>>.broadcast();
+  StreamController<Map<String, dynamic>> _controller =
+      StreamController<Map<String, dynamic>>.broadcast();
   StreamSubscription? _channelSub;
   bool _connected = false;
 
@@ -18,6 +19,11 @@ class WebSocketCollaborationTransport implements CollaborationTransport {
 
   @override
   Future<void> connect(String url) async {
+    // Reset controller if previously closed
+    if (_controller.isClosed) {
+      _controller = StreamController<Map<String, dynamic>>.broadcast();
+    }
+
     _channel = WebSocketChannel.connect(Uri.parse(url));
     await _channel!.ready;
     _connected = true;
@@ -71,8 +77,9 @@ class WebSocketCollaborationTransport implements CollaborationTransport {
   Future<void> disconnect() async {
     _connected = false;
     await _channelSub?.cancel();
+    _channelSub = null;
     await _channel?.sink.close();
     _channel = null;
-    if (!_controller.isClosed) await _controller.close();
+    // Don't close the controller — keep it alive for reuse
   }
 }
