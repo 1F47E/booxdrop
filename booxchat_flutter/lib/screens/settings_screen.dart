@@ -32,6 +32,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _syncFromProvider();
+    // Re-sync when provider finishes async _load()
+    context.read<SettingsProvider>().addListener(_onProviderChanged);
+  }
+
+  @override
+  void dispose() {
+    // May already be disposed if navigated away after provider gone
+    try {
+      context.read<SettingsProvider>().removeListener(_onProviderChanged);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  void _onProviderChanged() {
+    // Only re-sync if the user hasn't made local changes
+    if (!_dirty && mounted) {
+      setState(() => _syncFromProvider());
+    }
+  }
+
+  void _syncFromProvider() {
     final s = context.read<SettingsProvider>();
     _chatModel = s.chatModel;
     _kidsMode = s.kidsMode;
@@ -311,7 +333,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   value: e.key,
                                   label: Text(
                                     '${e.value} ${SettingsProvider.nanoBananaModelPrices[e.key]}',
-                                    style: const TextStyle(fontSize: 13),
+                                    style: const TextStyle(fontSize: 15),
                                   ),
                                 ))
                             .toList(),
@@ -346,7 +368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       label: Text(
                                         '${e.value} ${SettingsProvider.grokModelPrices[e.key]}',
                                         style:
-                                            const TextStyle(fontSize: 13),
+                                            const TextStyle(fontSize: 15),
                                       ),
                                     ))
                                 .toList(),
@@ -528,7 +550,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(
                       'v${AppVersion.version}${AppVersion.buildDate.isNotEmpty ? ' \u00b7 ${AppVersion.buildDate}' : ''}',
                       style: const TextStyle(
-                          fontSize: 13, color: Colors.black38),
+                          fontSize: 15, color: Colors.black38),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -536,7 +558,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(
                       'Built with \u2764\ufe0f for Mia and Iva',
                       style: TextStyle(
-                          fontSize: 13, color: Colors.black38),
+                          fontSize: 15, color: Colors.black38),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -551,7 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Text(error,
                     style:
-                        const TextStyle(fontSize: 13, color: Colors.red)),
+                        const TextStyle(fontSize: 15, color: Colors.red)),
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),

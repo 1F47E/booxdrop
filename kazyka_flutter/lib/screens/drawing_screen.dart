@@ -82,15 +82,24 @@ class _DrawingScreenState extends State<DrawingScreen> {
         .map((p) => CanvasStroke.normalize(p, size))
         .toList();
     final authorId = context.read<DeviceIdentityService>().deviceId;
+    final stroke = CanvasStroke(
+      authorId: authorId,
+      colorValue: _activeStroke!.color.toARGB32(),
+      width: _activeStroke!.width,
+      points: normalized,
+    );
     setState(() {
-      _strokes.add(CanvasStroke(
-        authorId: authorId,
-        colorValue: _activeStroke!.color.toARGB32(),
-        width: _activeStroke!.width,
-        points: normalized,
-      ));
+      _strokes.add(stroke);
       _activeStroke = null;
     });
+
+    // Send to peer in live mode
+    final session = context.read<LiveSessionProvider>();
+    if (session.isLive) {
+      session.sendStrokeStart(stroke);
+      session.sendStrokePoints(stroke.id, stroke.points);
+      session.sendStrokeEnd(stroke.id);
+    }
   }
 
   void _onCanvasTap(TapUpDetails details) async {
@@ -106,15 +115,20 @@ class _DrawingScreenState extends State<DrawingScreen> {
     if (text == null || text.isEmpty || !mounted) return;
     if (size == null) return;
 
-    setState(() {
-      _texts.add(CanvasText(
-        authorId: authorId,
-        text: text,
-        colorValue: _color.toARGB32(),
-        x: details.localPosition.dx / size.width,
-        y: details.localPosition.dy / size.height,
-      ));
-    });
+    final canvasText = CanvasText(
+      authorId: authorId,
+      text: text,
+      colorValue: _color.toARGB32(),
+      x: details.localPosition.dx / size.width,
+      y: details.localPosition.dy / size.height,
+    );
+    setState(() => _texts.add(canvasText));
+
+    // Send to peer in live mode
+    final session = context.read<LiveSessionProvider>();
+    if (session.isLive) {
+      session.sendTextAdd(canvasText);
+    }
   }
 
   Future<String?> _renderAndSave() async {
@@ -372,10 +386,12 @@ class _DrawingScreenState extends State<DrawingScreen> {
               onPanUpdate: _onPanUpdate,
               onPanEnd: _onPanEnd,
               onTapUp: _onCanvasTap,
-              child: DrawingCanvas(
-                strokes: _strokes,
-                texts: _texts,
-                activeStroke: _activeStroke,
+              child: Consumer<LiveSessionProvider>(
+                builder: (_, session, _) => DrawingCanvas(
+                  strokes: [..._strokes, ...session.remoteStrokes],
+                  texts: [..._texts, ...session.remoteTexts],
+                  activeStroke: _activeStroke,
+                ),
               ),
             ),
           ),

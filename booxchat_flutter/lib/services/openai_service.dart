@@ -283,13 +283,11 @@ class OpenAIService {
         if (settings.availableTtsProviders.isNotEmpty) _ttsTool,
       ];
       final model = settings.chatModel;
-      final isReasoning = model.startsWith('gpt-5');
       final body = <String, dynamic>{
         'model': model,
         'messages': conversation,
         'tools': tools,
-        if (isReasoning) 'reasoning_effort': 'medium',
-        if (!isReasoning) 'temperature': 0.7,
+        'temperature': 0.7,
       };
 
       _log.info('chat', 'Sending ${conversation.length} msgs to $model');

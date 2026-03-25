@@ -25,6 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   String? _pendingImagePath;
+  String? _lastSessionId;
   ChatProvider? _chatProvider;
 
   @override
@@ -49,6 +50,15 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _onChatChanged() {
+    // Clear input when switching sessions
+    final currentId = _chatProvider?.currentSessionId;
+    if (currentId != _lastSessionId) {
+      _lastSessionId = currentId;
+      _controller.clear();
+      if (_pendingImagePath != null) {
+        setState(() => _pendingImagePath = null);
+      }
+    }
     _scrollToBottom();
     EinkService.requestFullRefresh();
   }
@@ -118,6 +128,24 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             backgroundColor: Colors.black,
             actions: [
+              if (provider.messages.any((m) => m.imagePath != null))
+                IconButton(
+                  icon: const Icon(Icons.photo_library,
+                      color: Colors.white),
+                  onPressed: () {
+                    final paths = provider.messages
+                        .where((m) => m.imagePath != null)
+                        .map((m) => m.imagePath!)
+                        .toList();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FullScreenImage(paths: paths),
+                      ),
+                    );
+                  },
+                  tooltip: 'Chat images',
+                ),
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.white),
                 onPressed: provider.currentSessionId == null
@@ -150,7 +178,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     ? _ConversationStarters(
                         onTap: (text) => provider.sendMessage(text),
                       )
-                    : ListView.builder(
+                    : Builder(builder: (context) {
+                        final chatImagePaths = provider.messages
+                            .where((m) => m.imagePath != null)
+                            .map((m) => m.imagePath!)
+                            .toList();
+                        return ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 12),
@@ -172,7 +205,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _MessageBubble(key: ValueKey(message.id), message: message),
+                                _MessageBubble(key: ValueKey(message.id), message: message, chatImagePaths: chatImagePaths),
                                 if (isLastAssistant)
                                   _QuickReplies(
                                     replies: message.quickReplies!,
@@ -183,7 +216,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           );
                         },
-                      ),
+                      );
+                      }),
               ),
 
               // Error banner
@@ -200,7 +234,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Text(
                           'Error: ${provider.error}',
                           style: const TextStyle(
-                              color: Colors.black, fontSize: 13),
+                              color: Colors.black, fontSize: 15),
                         ),
                       ),
                       TextButton(
@@ -235,7 +269,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       const Expanded(
                         child: Text('Photo attached',
                             style: TextStyle(
-                                fontSize: 13, color: Colors.black54)),
+                                fontSize: 15, color: Colors.black54)),
                       ),
                       GestureDetector(
                         onTap: () =>
@@ -375,7 +409,7 @@ class _WarningBanner extends StatelessWidget {
               text,
               style: const TextStyle(
                   color: Colors.black,
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: FontWeight.w500),
             ),
           ),
@@ -387,7 +421,9 @@ class _WarningBanner extends StatelessWidget {
 
 class _MessageBubble extends StatefulWidget {
   final Message message;
-  const _MessageBubble({super.key, required this.message});
+  final List<String> chatImagePaths;
+  const _MessageBubble(
+      {super.key, required this.message, required this.chatImagePaths});
 
   @override
   State<_MessageBubble> createState() => _MessageBubbleState();
@@ -399,11 +435,13 @@ class _MessageBubbleState extends State<_MessageBubble> {
   bool _toggling = false;
   StreamSubscription? _playerSub;
 
-  static void _showFullScreenImage(BuildContext context, String path) {
+  static void _showFullScreenImage(
+      BuildContext context, String path, List<String> allPaths) {
+    final index = allPaths.indexOf(path).clamp(0, allPaths.length - 1);
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FullScreenImage(path: path),
+        builder: (_) => FullScreenImage(paths: allPaths, initialIndex: index),
       ),
     );
   }
@@ -457,7 +495,13 @@ class _MessageBubbleState extends State<_MessageBubble> {
     final settings = context.watch<SettingsProvider>();
     final fontSize = settings.fontSize;
 
-    return Align(
+    final isFailed = message.status == MessageStatus.failed;
+
+    return Column(
+      crossAxisAlignment:
+          isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+      Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
@@ -513,7 +557,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
                     Text(
                       _isPlaying ? 'Stop' : 'Play',
                       style: const TextStyle(
-                          color: Colors.black54, fontSize: 13),
+                          color: Colors.black54, fontSize: 15),
                     ),
                   ],
                 ),
@@ -522,18 +566,22 @@ class _MessageBubbleState extends State<_MessageBubble> {
             if (message.imagePath != null) ...[
               if (displayText.isNotEmpty) const SizedBox(height: 8),
               GestureDetector(
-                onTap: () => _showFullScreenImage(context, message.imagePath!),
-                child: ClipRRect(
+                onTap: () => _showFullScreenImage(
+                    context, message.imagePath!, widget.chatImagePaths),
+                child: FractionallySizedBox(
+                  widthFactor: 0.5,
+                  alignment: Alignment.centerLeft,
+                  child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.file(
                     File(message.imagePath!),
-                    width: 160,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Text(
                       '[Image not found]',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      style: TextStyle(color: Colors.grey, fontSize: 15),
                     ),
                   ),
+                ),
                 ),
               ),
             ],
@@ -541,6 +589,24 @@ class _MessageBubbleState extends State<_MessageBubble> {
         );
         }),
       ),
+    ),
+      if (isFailed)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: GestureDetector(
+            onTap: () => context.read<ChatProvider>().retryLastFailed(),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.refresh, size: 16, color: Colors.red),
+                SizedBox(width: 4),
+                Text('Retry',
+                    style: TextStyle(fontSize: 14, color: Colors.red)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -785,7 +851,7 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
                             subtitle: Text(
                               _formatDate(session.updatedAt),
                               style: const TextStyle(
-                                  color: Colors.black54, fontSize: 12),
+                                  color: Colors.black54, fontSize: 14),
                             ),
                             selected: isCurrent,
                             selectedTileColor: Colors.black.withValues(alpha: 0.05),

@@ -163,7 +163,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
                       subtitle: Text(
                         _formatDate(file),
                         style: const TextStyle(
-                            fontSize: 12, color: Colors.black54),
+                            fontSize: 14, color: Colors.black54),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete,

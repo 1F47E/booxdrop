@@ -79,7 +79,7 @@ class _LogsScreenState extends State<LogsScreen> {
                           children: [
                             Text(time,
                                 style: const TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 13,
                                     color: Colors.black54,
                                     fontFamily: 'monospace')),
                             const SizedBox(width: 6),
@@ -92,20 +92,20 @@ class _LogsScreenState extends State<LogsScreen> {
                               ),
                               child: Text(_levelLabel(e.level),
                                   style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: _levelColor(e.level))),
                             ),
                             const SizedBox(width: 6),
                             Text('${e.source} ',
                                 style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.black87)),
                             Expanded(
                               child: Text(e.message,
                                   style: const TextStyle(
-                                      fontSize: 12, color: Colors.black87)),
+                                      fontSize: 14, color: Colors.black87)),
                             ),
                           ],
                         ),
@@ -123,7 +123,7 @@ class _LogsScreenState extends State<LogsScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: FilterChip(
-        label: Text(label, style: const TextStyle(fontSize: 12)),
+        label: Text(label, style: const TextStyle(fontSize: 14)),
         selected: selected,
         onSelected: (_) => setState(() => _filter = level),
         selectedColor: Colors.black12,

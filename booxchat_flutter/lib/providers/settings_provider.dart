@@ -5,8 +5,6 @@ import '../services/tts_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const chatModelNames = {
-    'gpt-5.4': 'GPT-5.4',
-    'gpt-5.4-mini': 'GPT-5.4 Mini',
     'gpt-4.1': 'GPT-4.1',
     'gpt-4.1-mini': 'GPT-4.1 Mini',
     'gpt-4.1-nano': 'GPT-4.1 Nano',
@@ -67,10 +65,10 @@ class SettingsProvider extends ChangeNotifier {
   static const _kTtsProvider = 'settings_tts_provider';
   static const _kTtsVoice = 'settings_tts_voice';
 
-  String _chatModel = 'gpt-5.4-mini';
-  bool _kidsMode = false;
+  String _chatModel = 'gpt-4.1';
+  bool _kidsMode = true;
   int _kidsAge = 7;
-  double _fontSize = 17; // default +2 from original 15
+  double _fontSize = 23;
   String _imageProvider = 'nano_banana';
   String _nanoBananaModel = 'gemini-3.1-flash-image-preview';
   String _grokModel = 'grok-imagine-image';
@@ -109,10 +107,10 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    _chatModel = prefs.getString(_kChatModel) ?? 'gpt-5.4-mini';
-    _kidsMode = prefs.getBool(_kKidsMode) ?? false;
+    _chatModel = prefs.getString(_kChatModel) ?? 'gpt-4.1';
+    _kidsMode = prefs.getBool(_kKidsMode) ?? true;
     _kidsAge = prefs.getInt(_kKidsAge) ?? 7;
-    _fontSize = prefs.getDouble(_kFontSize) ?? 17;
+    _fontSize = prefs.getDouble(_kFontSize) ?? 23;
     _imageProvider = prefs.getString(_kImageProvider) ?? 'nano_banana';
     _nanoBananaModel = prefs.getString(_kNanoBananaModel) ??
         'gemini-3.1-flash-image-preview';

@@ -21,6 +21,9 @@ class ChatProvider extends ChangeNotifier {
   Session? _currentSession;
   List<Session> _sessions = [];
   Timer? _saveTimer;
+  Timer? _retryTimer;
+  int _retryAttempt = 0;
+  static const _retryDelays = [5, 15, 30, 60, 120, 300, 600, 900, 1800];
   final ConnectivityService _connectivity = ConnectivityService();
   bool _isOnline = true;
   String? _apiKeyWarning;
@@ -29,6 +32,7 @@ class ChatProvider extends ChangeNotifier {
   List<Message> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isRetrying => _retryTimer != null;
   String? get currentSessionId => _currentSessionId;
   Session? get currentSession => _currentSession;
   List<Session> get sessions => List.unmodifiable(_sessions);
@@ -322,12 +326,16 @@ class ChatProvider extends ChangeNotifier {
         Message(role: 'user', content: text, imagePath: imagePath));
   }
 
-  Future<void> _sendUserMessage(Message userMessage) async {
+  Future<void> _sendUserMessage(Message userMessage,
+      {bool isRetry = false}) async {
     if (_currentSessionId == null) {
       await createNewSession();
     }
 
-    _messages.add(userMessage);
+    if (!isRetry) {
+      _cancelAutoRetry();
+      _messages.add(userMessage);
+    }
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -351,15 +359,61 @@ class ChatProvider extends ChangeNotifier {
         audioPath: response.audioPath,
         quickReplies: parsed.quickReplies,
       ));
+      _cancelAutoRetry();
       _scheduleSave();
     } catch (e) {
       _log.error('chat', 'Error: $e');
       _error = e.toString().replaceFirst('Exception: ', '');
+      // Mark the user message as failed
+      final idx = _messages.lastIndexWhere(
+          (m) => m.role == 'user' && m.id == userMessage.id);
+      if (idx >= 0) {
+        _messages[idx] =
+            _messages[idx].copyWith(status: MessageStatus.failed);
+      }
+      _scheduleSave();
+      // Start auto-retry if not already retrying
+      if (!isRetry) _startAutoRetry();
     } finally {
       _isLoading = false;
       _toolStatus = null;
       notifyListeners();
     }
+  }
+
+  void retryLastFailed() {
+    final idx =
+        _messages.lastIndexWhere((m) => m.status == MessageStatus.failed);
+    if (idx < 0 || _isLoading) return;
+    _cancelAutoRetry();
+    // Mark as sent (optimistic)
+    final msg = _messages[idx].copyWith(status: MessageStatus.sent);
+    _messages[idx] = msg;
+    _error = null;
+    notifyListeners();
+    _sendUserMessage(msg, isRetry: true);
+  }
+
+  void _startAutoRetry() {
+    if (_retryAttempt >= _retryDelays.length) return;
+    final delay = _retryDelays[_retryAttempt];
+    _log.info('chat', 'Auto-retry in ${delay}s (attempt ${_retryAttempt + 1})');
+    _retryTimer = Timer(Duration(seconds: delay), () {
+      _retryAttempt++;
+      if (_isOnline) {
+        _log.info('chat', 'Auto-retrying (attempt $_retryAttempt)');
+        retryLastFailed();
+      } else {
+        _log.info('chat', 'Offline, skipping retry $_retryAttempt');
+        _startAutoRetry(); // Schedule next attempt
+      }
+    });
+  }
+
+  void _cancelAutoRetry() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _retryAttempt = 0;
   }
 
   void clearConversation() {
@@ -377,6 +431,7 @@ class ChatProvider extends ChangeNotifier {
   @override
   void dispose() {
     _saveTimer?.cancel();
+    _cancelAutoRetry();
     _persistSession();
     _connectivity.dispose();
     super.dispose();

@@ -40,7 +40,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => FullScreenImage(
-          path: path,
+          paths: [path],
           onDelete: _refresh,
           onChat: () => _startChatWithImage(path),
         ),

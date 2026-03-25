@@ -372,7 +372,19 @@ class LiveSessionProvider extends ChangeNotifier {
         break;
 
       case 'stroke_start':
-        // Remote peer started a stroke — will receive points
+        if (payload != null) {
+          final strokeId = payload['stroke_id'] as String?;
+          final colorValue = payload['color_value'] as int?;
+          final width = (payload['width'] as num?)?.toDouble();
+          if (strokeId != null && colorValue != null && width != null) {
+            remoteStrokes.add(CanvasStroke(
+              id: strokeId,
+              colorValue: colorValue,
+              width: width,
+            ));
+            notifyListeners();
+          }
+        }
         break;
 
       case 'stroke_points':
