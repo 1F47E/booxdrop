@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.1 (2025-03-25)
+
+- Image upload: attach photos from gallery to chat messages
+- Chat model selection: GPT-5.4, 5.4 Mini, 4.1, 4.1 Mini, 4.1 Nano
+- Grok (xAI) image provider with Standard and Pro models
+- Settings: deferred save with provider validation
+- Delete chat dialog with media cleanup checkbox
+- Drawing pad for kids with AI integration
+- In-app logging with filterable log viewer
+- Version info and changelog in settings
+- Chat history drawer with conversation starters
+- TTS as tool call with voice selection
+- Multiple bug fixes and code review improvements
+
 ## 1.0.0
 
 - Initial release
