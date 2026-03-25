@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/app_version.dart';
 import '../services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -67,6 +68,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Text(
             'This name appears on the drawing screen',
             style: TextStyle(fontSize: 13, color: Colors.black54),
+          ),
+          const SizedBox(height: 32),
+          Center(
+            child: Text(
+              'Kazyka v${AppVersion.version}${AppVersion.buildDate.isNotEmpty ? ' \u00b7 ${AppVersion.buildDate}' : ''}',
+              style: const TextStyle(fontSize: 13, color: Colors.black38),
+            ),
           ),
         ],
       ),
