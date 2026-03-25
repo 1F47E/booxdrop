@@ -31,6 +31,7 @@ class FakeCollaborationTransport implements CollaborationTransport {
       case 'hello':
         // Acknowledged silently
         break;
+      case 'connect':
       case 'create_session':
         _sessionId = 'sess_${DateTime.now().millisecondsSinceEpoch}';
         _joinCode = _generateCode();

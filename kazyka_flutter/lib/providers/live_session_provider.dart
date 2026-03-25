@@ -67,6 +67,40 @@ class LiveSessionProvider extends ChangeNotifier {
 
   LiveSessionProvider(this._transport);
 
+  Future<void> connectAuto({
+    required String deviceId,
+    required String displayName,
+    required String serverUrl,
+  }) async {
+    _state = LiveSessionState.creating;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _transport.connect(serverUrl);
+      _listenToEvents();
+
+      _transport.send({
+        'type': 'hello',
+        'payload': {
+          'device_id': deviceId,
+          'display_name': displayName,
+          'platform': 'android',
+          'app_version': '1.0.0',
+        },
+      });
+
+      _transport.send({
+        'type': 'connect',
+        'payload': {'device_id': deviceId},
+      });
+    } catch (e) {
+      _state = LiveSessionState.error;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   Future<void> createSession({
     required String deviceId,
     required String displayName,

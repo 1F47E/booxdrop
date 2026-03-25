@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/live_session_provider.dart';
 
@@ -12,54 +11,47 @@ class SessionStatusBanner extends StatelessWidget {
       builder: (context, session, _) {
         switch (session.state) {
           case LiveSessionState.idle:
+            return const SizedBox.shrink();
+
           case LiveSessionState.creating:
           case LiveSessionState.joining:
-            return const SizedBox.shrink();
+            return _Banner(
+              icon: Icons.wifi_tethering,
+              trailing: null,
+              children: const [
+                Text('Connecting...',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ],
+            );
 
           case LiveSessionState.waiting:
             return _Banner(
               icon: Icons.hourglass_empty,
-              children: [
-                if (session.joinCode != null) ...[
-                  const Text('Live Session',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: () {
-                      Clipboard.setData(
-                          ClipboardData(text: session.joinCode!));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Code copied!'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Share code ${session.joinCode}',
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text('Waiting for someone to join',
-                      style: TextStyle(color: Colors.black54, fontSize: 13)),
-                ],
-              ],
               trailing: TextButton(
                 onPressed: () => session.leaveSession(),
                 child: const Text('Cancel',
                     style: TextStyle(color: Colors.black)),
               ),
+              children: const [
+                Text('Live Drawing',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                SizedBox(height: 4),
+                Text('Waiting for other device...',
+                    style: TextStyle(color: Colors.black54, fontSize: 13)),
+              ],
             );
 
           case LiveSessionState.connected:
             final peerLabel = session.peer?.label ?? 'peer';
             return _Banner(
               icon: Icons.people,
+              trailing: TextButton(
+                onPressed: () => session.leaveSession(),
+                child: const Text('Leave',
+                    style: TextStyle(color: Colors.black)),
+              ),
               children: [
                 Text(
                   'Connected with $peerLabel',
@@ -67,17 +59,17 @@ class SessionStatusBanner extends StatelessWidget {
                       fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ],
-              trailing: TextButton(
-                onPressed: () => session.leaveSession(),
-                child: const Text('Leave',
-                    style: TextStyle(color: Colors.black)),
-              ),
             );
 
           case LiveSessionState.reconnecting:
             final peerName = session.peer?.label ?? 'Peer';
             return _Banner(
               icon: Icons.wifi_off,
+              trailing: TextButton(
+                onPressed: () => session.leaveSession(),
+                child: const Text('Leave',
+                    style: TextStyle(color: Colors.black)),
+              ),
               children: [
                 Text(
                   '$peerName lost connection',
@@ -90,27 +82,22 @@ class SessionStatusBanner extends StatelessWidget {
                       const TextStyle(color: Colors.black54, fontSize: 13),
                 ),
               ],
-              trailing: TextButton(
-                onPressed: () => session.leaveSession(),
-                child: const Text('Leave',
-                    style: TextStyle(color: Colors.black)),
-              ),
             );
 
           case LiveSessionState.error:
             return _Banner(
               icon: Icons.error_outline,
+              trailing: TextButton(
+                onPressed: () => session.leaveSession(),
+                child: const Text('Dismiss',
+                    style: TextStyle(color: Colors.black)),
+              ),
               children: [
                 Text(
                   session.error ?? 'Connection error',
                   style: const TextStyle(fontSize: 14),
                 ),
               ],
-              trailing: TextButton(
-                onPressed: () => session.leaveSession(),
-                child: const Text('Dismiss',
-                    style: TextStyle(color: Colors.black)),
-              ),
             );
         }
       },

@@ -12,7 +12,6 @@ import '../widgets/session_status_banner.dart';
 import '../widgets/stroke_picker.dart';
 import '../widgets/text_tool_dialog.dart';
 import 'gallery_screen.dart';
-import 'live_session_sheet.dart';
 import 'settings_screen.dart';
 
 enum _Tool { pen, text }
@@ -82,8 +81,10 @@ class _DrawingScreenState extends State<DrawingScreen> {
     final normalized = _activeStroke!.points
         .map((p) => CanvasStroke.normalize(p, size))
         .toList();
+    final authorId = context.read<DeviceIdentityService>().deviceId;
     setState(() {
       _strokes.add(CanvasStroke(
+        authorId: authorId,
         colorValue: _activeStroke!.color.toARGB32(),
         width: _activeStroke!.width,
         points: normalized,
@@ -95,17 +96,19 @@ class _DrawingScreenState extends State<DrawingScreen> {
   void _onCanvasTap(TapUpDetails details) async {
     if (_tool != _Tool.text) return;
 
+    final authorId = context.read<DeviceIdentityService>().deviceId;
+    final size = _canvasSize;
+
     final text = await showDialog<String>(
       context: context,
       builder: (_) => TextToolDialog(color: _color),
     );
-    if (text == null || text.isEmpty) return;
-
-    final size = _canvasSize;
+    if (text == null || text.isEmpty || !mounted) return;
     if (size == null) return;
 
     setState(() {
       _texts.add(CanvasText(
+        authorId: authorId,
         text: text,
         colorValue: _color.toARGB32(),
         x: details.localPosition.dx / size.width,
@@ -266,50 +269,45 @@ class _DrawingScreenState extends State<DrawingScreen> {
     }
   }
 
-  void _openLiveSheet() async {
+  void _onLivePressed() {
     final identity = context.read<DeviceIdentityService>();
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => LiveSessionSheet(identity: identity),
-    );
-    if (result == null || !mounted) return;
-
     final session = context.read<LiveSessionProvider>();
-    const serverUrl = 'wss://booxchat.mos6581.cc/ws/live';
-
-    if (result['action'] == 'create') {
-      session.createSession(
-        deviceId: identity.deviceId,
-        displayName: identity.displayName,
-        serverUrl: serverUrl,
-      );
-    } else if (result['action'] == 'join') {
-      session.joinSession(
-        code: result['code'] as String,
-        deviceId: identity.deviceId,
-        displayName: identity.displayName,
-        serverUrl: serverUrl,
-      );
-    }
+    session.connectAuto(
+      deviceId: identity.deviceId,
+      displayName: identity.displayName,
+      serverUrl: 'wss://booxchat.mos6581.cc/ws/live',
+    );
   }
 
   void _onUndo() {
+    final session = context.read<LiveSessionProvider>();
+    final live = session.isLive;
+    final localId = live
+        ? context.read<DeviceIdentityService>().deviceId
+        : null;
+
     setState(() {
-      // Remove last item (stroke or text, whichever was added most recently)
-      if (_strokes.isEmpty && _texts.isEmpty) return;
-      if (_texts.isEmpty) {
-        _strokes.removeLast();
+      // In live mode, only undo items authored by this device
+      final myStrokes = live
+          ? _strokes.where((s) => s.authorId == localId).toList()
+          : _strokes;
+      final myTexts = live
+          ? _texts.where((t) => t.authorId == localId).toList()
+          : _texts;
+
+      if (myStrokes.isEmpty && myTexts.isEmpty) return;
+      if (myTexts.isEmpty) {
+        _strokes.remove(myStrokes.last);
         return;
       }
-      if (_strokes.isEmpty) {
-        _texts.removeLast();
+      if (myStrokes.isEmpty) {
+        _texts.remove(myTexts.last);
         return;
       }
-      // Remove whichever was created more recently
-      if (_strokes.last.createdAt >= _texts.last.createdAt) {
-        _strokes.removeLast();
+      if (myStrokes.last.createdAt >= myTexts.last.createdAt) {
+        _strokes.remove(myStrokes.last);
       } else {
-        _texts.removeLast();
+        _texts.remove(myTexts.last);
       }
     });
   }
@@ -332,7 +330,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
         actions: [
           Consumer<LiveSessionProvider>(
             builder: (_, session, _) => TextButton(
-              onPressed: session.isLive ? null : _openLiveSheet,
+              onPressed: session.isLive ? null : _onLivePressed,
               child: Text(
                 session.isLive ? 'LIVE' : 'Live',
                 style: TextStyle(
@@ -430,31 +428,26 @@ class _DrawingScreenState extends State<DrawingScreen> {
                     Consumer<LiveSessionProvider>(
                       builder: (_, session, _) {
                         final live = session.isLive;
-                        final canClear =
-                            _hasContent && (!live || session.isHost);
                         return Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.undo,
                                   color: Colors.black),
-                              onPressed: live ||
-                                      (_strokes.isEmpty && _texts.isEmpty)
-                                  ? null
-                                  : _onUndo,
+                              onPressed:
+                                  (_strokes.isEmpty && _texts.isEmpty)
+                                      ? null
+                                      : _onUndo,
                               tooltip: 'Undo',
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: Colors.black),
-                              onPressed: canClear
-                                  ? () {
-                                      _onClear();
-                                      if (live) session.sendClear();
-                                    }
-                                  : null,
-                              tooltip: 'Clear',
-                            ),
+                            if (!live)
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    color: Colors.black),
+                                onPressed:
+                                    _hasContent ? _onClear : null,
+                                tooltip: 'Clear',
+                              ),
                             if (!live)
                               IconButton(
                                 icon: const Icon(Icons.note_add,
