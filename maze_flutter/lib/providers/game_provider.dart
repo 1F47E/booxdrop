@@ -3,8 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/maze.dart';
 import '../services/game_service.dart';
+import '../services/maze_storage.dart';
 
-enum GamePhase { home, lobby, build, countdown, race, gameOver }
+enum GamePhase { home, lobby, build, countdown, race, gameOver, workshop }
 
 class GameProvider extends ChangeNotifier {
   final GameService _service = GameService();
@@ -124,6 +125,61 @@ class GameProvider extends ChangeNotifier {
   void _handleDisconnect() {
     _connected = false;
     _setBanner('Disconnected', 'error');
+    notifyListeners();
+  }
+
+  // --- Workshop (offline builder) ---
+
+  void enterWorkshop() {
+    for (int y = 0; y < Maze.height; y++) {
+      for (int x = 0; x < Maze.width; x++) {
+        _maze.set(x, y, Tile.floor);
+      }
+    }
+    _selectedTool = Tile.wall;
+    _isDone = false;
+    _validationError = null;
+    _phase = GamePhase.workshop;
+    notifyListeners();
+  }
+
+  void enterWorkshopWithMaze(SavedMaze saved) {
+    final src = saved.toMaze();
+    for (int y = 0; y < Maze.height; y++) {
+      for (int x = 0; x < Maze.width; x++) {
+        _maze.set(x, y, src.get(x, y));
+      }
+    }
+    _selectedTool = Tile.wall;
+    _isDone = false;
+    _validationError = null;
+    _phase = GamePhase.workshop;
+    notifyListeners();
+  }
+
+  void exitWorkshop() {
+    _phase = GamePhase.home;
+    notifyListeners();
+  }
+
+  Future<bool> saveMaze(String name) async {
+    if (!_maze.isLocallyValid) return false;
+    await MazeStorage.save(name, _maze.toJson());
+    return true;
+  }
+
+  void loadMaze(SavedMaze saved) {
+    final src = saved.toMaze();
+    for (int y = 0; y < Maze.height; y++) {
+      for (int x = 0; x < Maze.width; x++) {
+        _maze.set(x, y, src.get(x, y));
+      }
+    }
+    // Clear done state if in multiplayer build
+    if (_isDone && _sessionId != null) {
+      _isDone = false;
+      _service.setDone(_sessionId!, false);
+    }
     notifyListeners();
   }
 

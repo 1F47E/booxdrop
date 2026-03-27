@@ -69,6 +69,7 @@ class GameRouter extends StatelessWidget {
     return switch (phase) {
       GamePhase.home || GamePhase.lobby => const HomeScreen(),
       GamePhase.build || GamePhase.countdown => const BuilderScreen(),
+      GamePhase.workshop => const BuilderScreen(),
       GamePhase.race => const RaceScreen(),
       GamePhase.gameOver => const ResultScreen(),
     };

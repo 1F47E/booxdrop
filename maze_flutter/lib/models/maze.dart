@@ -69,4 +69,36 @@ class Maze {
       hasKey && hasDoor && hasTreasure && isStartFloor && countTile(Tile.wall) <= 20;
 
   List<List<int>> toJson() => cells;
+
+  Maze copy() => Maze.from(cells);
+}
+
+class SavedMaze {
+  final String id;
+  final String name;
+  final List<List<int>> cells;
+  final DateTime createdAt;
+
+  SavedMaze({
+    required this.id,
+    required this.name,
+    required this.cells,
+    required this.createdAt,
+  });
+
+  factory SavedMaze.fromJson(Map<String, dynamic> json) => SavedMaze(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    cells: (json['cells'] as List).map((r) => List<int>.from(r as List)).toList(),
+    createdAt: DateTime.parse(json['created_at'] as String),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'cells': cells,
+    'created_at': createdAt.toIso8601String(),
+  };
+
+  Maze toMaze() => Maze.from(cells);
 }
