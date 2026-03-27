@@ -38,8 +38,8 @@ class _LogsScreenState extends State<LogsScreen> {
       appBar: AppBar(
         title: Text('Logs (${entries.length})',
             style: const TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Column(
         children: [
@@ -57,12 +57,12 @@ class _LogsScreenState extends State<LogsScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: Colors.black26),
+          const Divider(height: 1, color: const Color(0xFF666666)),
           Expanded(
             child: entries.isEmpty
                 ? const Center(
                     child: Text('No logs yet',
-                        style: TextStyle(fontSize: 16, color: Colors.black54)))
+                        style: TextStyle(fontSize: 16, color: const Color(0xFF444444))))
                 : ListView.builder(
                     itemCount: entries.length,
                     itemBuilder: (context, index) {
@@ -80,7 +80,7 @@ class _LogsScreenState extends State<LogsScreen> {
                             Text(time,
                                 style: const TextStyle(
                                     fontSize: 13,
-                                    color: Colors.black54,
+                                    color: const Color(0xFF444444),
                                     fontFamily: 'monospace')),
                             const SizedBox(width: 6),
                             Container(
@@ -129,7 +129,7 @@ class _LogsScreenState extends State<LogsScreen> {
         selectedColor: Colors.black12,
         checkmarkColor: Colors.black,
         backgroundColor: Colors.transparent,
-        side: BorderSide(color: selected ? Colors.black : Colors.black26),
+        side: BorderSide(color: selected ? Colors.black : const Color(0xFF666666)),
       ),
     );
   }

@@ -21,7 +21,7 @@ class SessionStatusBanner extends StatelessWidget {
               children: const [
                 Text('Connecting...',
                     style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             );
 
@@ -36,10 +36,10 @@ class SessionStatusBanner extends StatelessWidget {
               children: const [
                 Text('Live Drawing',
                     style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 SizedBox(height: 4),
                 Text('Waiting for other device...',
-                    style: TextStyle(color: Colors.black54, fontSize: 13)),
+                    style: const TextStyle(color: Color(0xFF444444), fontSize: 16)),
               ],
             );
 
@@ -56,7 +56,7 @@ class SessionStatusBanner extends StatelessWidget {
                 Text(
                   'Connected with $peerLabel',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 15),
+                      fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ],
             );
@@ -74,12 +74,12 @@ class SessionStatusBanner extends StatelessWidget {
                 Text(
                   '$peerName lost connection',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 15),
+                      fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
                   'Waiting ${session.reconnectSecondsLeft}s for reconnect',
                   style:
-                      const TextStyle(color: Colors.black54, fontSize: 13),
+                      const TextStyle(color: const Color(0xFF444444), fontSize: 16),
                 ),
               ],
             );
@@ -95,7 +95,7 @@ class SessionStatusBanner extends StatelessWidget {
               children: [
                 Text(
                   session.error ?? 'Connection error',
-                  style: const TextStyle(fontSize: 14),
+                  style: const TextStyle(fontSize: 16),
                 ),
               ],
             );
@@ -125,7 +125,7 @@ class _Banner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.black),
+          Icon(icon, size: 28, color: Colors.black),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

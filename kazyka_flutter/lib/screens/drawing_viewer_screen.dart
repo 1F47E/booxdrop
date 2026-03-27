@@ -42,11 +42,11 @@ class DrawingViewerScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.white),
+            icon: const Icon(Icons.delete, color: Colors.black),
             onPressed: () => _onDelete(context),
             tooltip: 'Delete',
           ),
@@ -58,7 +58,7 @@ class DrawingViewerScreen extends StatelessWidget {
           fit: BoxFit.contain,
           errorBuilder: (_, _, _) => const Text(
             'Image not found',
-            style: TextStyle(color: Colors.black54, fontSize: 16),
+            style: TextStyle(color: const Color(0xFF444444), fontSize: 16),
           ),
         ),
       ),

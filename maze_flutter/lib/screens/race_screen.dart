@@ -25,17 +25,17 @@ class RaceScreen extends StatelessWidget {
           // Key badge
           Container(
             margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: game.hasKey ? const Color(0xFFFFD700) : Colors.white24,
+              color: game.hasKey ? const Color(0xFFFFDD00) : Colors.white24,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               game.hasKey ? '\u{1F511} Key' : 'No Key',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: game.hasKey ? Colors.black : Colors.white70,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: game.hasKey ? Colors.black : Colors.white,
               ),
             ),
           ),
@@ -45,7 +45,7 @@ class RaceScreen extends StatelessWidget {
             child: Center(
               child: Text(
                 '${game.moveCount}',
-                style: const TextStyle(fontSize: 14, color: Colors.white70),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
           ),
@@ -61,14 +61,14 @@ class RaceScreen extends StatelessWidget {
           if (game.opponentEvent != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               color: const Color(0xFFE3F2FD),
               child: Text(
                 game.opponentEvent!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF1565C0),
+                  fontSize: 18,
+                  color: Color(0xFF000000),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -172,26 +172,26 @@ class _RaceGrid extends StatelessWidget {
 
   Color _tileColor(int tile) {
     return switch (tile) {
-      Tile.hidden => const Color(0xFFDDDDDD),
-      Tile.floor => Colors.white,
-      Tile.wall => const Color(0xFF333333),
-      Tile.key => const Color(0xFFFFF9C4),
-      Tile.door => const Color(0xFFE1BEE7),
-      Tile.treasure => const Color(0xFFFFCDD2),
-      Tile.openDoor => const Color(0xFFF3E5F5),
-      _ => Colors.white,
+      Tile.hidden => const Color(0xFFCCCCCC),
+      Tile.floor => const Color(0xFFF5F5F5),
+      Tile.wall => const Color(0xFF222222),
+      Tile.key => const Color(0xFFFFDD00),
+      Tile.door => const Color(0xFF7700CC),
+      Tile.treasure => const Color(0xFFFF0000),
+      Tile.openDoor => const Color(0xFFCC99FF),
+      _ => const Color(0xFFF5F5F5),
     };
   }
 
   Color _tileBorder(int tile) {
     return switch (tile) {
-      Tile.hidden => const Color(0xFFBBBBBB),
-      Tile.wall => const Color(0xFF333333),
-      Tile.key => const Color(0xFFFFD700),
-      Tile.door => const Color(0xFF7C4DFF),
-      Tile.treasure => const Color(0xFFFF1744),
-      Tile.openDoor => const Color(0xFF7C4DFF),
-      _ => const Color(0xFFDDDDDD),
+      Tile.hidden => const Color(0xFFAAAAAA),
+      Tile.wall => const Color(0xFF000000),
+      Tile.key => const Color(0xFFCC9900),
+      Tile.door => const Color(0xFF5500AA),
+      Tile.treasure => const Color(0xFFCC0000),
+      Tile.openDoor => const Color(0xFF5500AA),
+      _ => const Color(0xFFBBBBBB),
     };
   }
 
@@ -213,7 +213,7 @@ class _DPad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 160,
+      height: 200,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -223,7 +223,7 @@ class _DPad extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _DPadButton(icon: Icons.arrow_back, onTap: () => onMove('left')),
-              const SizedBox(width: 52, height: 52),
+              const SizedBox(width: 64, height: 64),
               _DPadButton(icon: Icons.arrow_forward, onTap: () => onMove('right')),
             ],
           ),
@@ -245,13 +245,13 @@ class _DPadButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 52,
-        height: 52,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
-          color: const Color(0xFF7C4DFF),
-          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFF7700CC),
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Icon(icon, color: Colors.white, size: 28),
+        child: Icon(icon, color: Colors.white, size: 36),
       ),
     );
   }

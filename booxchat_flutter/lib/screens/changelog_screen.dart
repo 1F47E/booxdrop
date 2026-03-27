@@ -10,8 +10,8 @@ class ChangelogScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Changelog',
             style: TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: FutureBuilder<String>(
         future: rootBundle.loadString('CHANGELOG.md'),
@@ -23,7 +23,7 @@ class ChangelogScreen extends StatelessWidget {
           if (snapshot.hasError) {
             return const Center(
                 child: Text('Could not load changelog',
-                    style: TextStyle(color: Colors.black54)));
+                    style: TextStyle(color: const Color(0xFF444444))));
           }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),

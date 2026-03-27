@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Tagline
                 const Text(
                   'Build. Swap. Race!',
-                  style: TextStyle(fontSize: 18, color: Color(0xFF9575CD)),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF444444)),
                 ),
                 const SizedBox(height: 32),
 
@@ -108,13 +108,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 12),
                         const Text(
                           'Looking for opponent...',
-                          style: TextStyle(fontSize: 16, color: Colors.orange, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 18, color: Color(0xFF000000), fontWeight: FontWeight.bold),
                         ),
                         if (game.joinCode != null) ...[
                           const SizedBox(height: 8),
                           Text(
                             'Code: ${game.joinCode}',
-                            style: const TextStyle(fontSize: 13, color: Colors.grey),
+                            style: const TextStyle(fontSize: 18, color: Color(0xFF444444), fontWeight: FontWeight.bold),
                           ),
                         ],
                       ],
@@ -157,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Icon(
                           _showCodeSection ? Icons.expand_less : Icons.expand_more,
-                          color: const Color(0xFF9575CD),
+                          color: const Color(0xFF444444),
                           size: 20,
                         ),
                         const SizedBox(width: 4),

@@ -49,6 +49,7 @@ class KazykaApp extends StatelessWidget {
         title: 'Kazyka',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
+          useMaterial3: false,
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.black,
             surface: Colors.white,
@@ -56,6 +57,10 @@ class KazykaApp extends StatelessWidget {
           scaffoldBackgroundColor: Colors.white,
           splashFactory: NoSplash.splashFactory,
           highlightColor: Colors.transparent,
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(elevation: 0, shadowColor: Colors.transparent),
+          ),
+          appBarTheme: const AppBarTheme(elevation: 0, shadowColor: Colors.transparent),
         ),
         home: const DrawingScreen(),
       ),

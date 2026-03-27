@@ -27,7 +27,7 @@ class StrokePicker extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? Colors.black : Colors.black26,
+                color: isSelected ? Colors.black : const Color(0xFF666666),
                 width: isSelected ? 2 : 1,
               ),
             ),

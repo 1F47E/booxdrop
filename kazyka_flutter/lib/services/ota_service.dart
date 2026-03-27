@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -84,10 +85,12 @@ class OtaService {
     try {
       final info = await PackageInfo.fromPlatform();
       final currentCode = int.parse(info.buildNumber);
+      debugPrint('OTA: $appId local=${info.version}+$currentCode');
 
+      final q = '?app=$appId&v=${info.version}&vc=$currentCode';
       final responses = await Future.wait([
-        http.get(Uri.parse(_manifestUrl)).timeout(_timeout),
-        http.get(Uri.parse(_manifestSigUrl)).timeout(_timeout),
+        http.get(Uri.parse('$_manifestUrl$q')).timeout(_timeout),
+        http.get(Uri.parse('$_manifestSigUrl$q')).timeout(_timeout),
       ]);
       final manifestResp = responses[0];
       final sigResp = responses[1];
@@ -102,15 +105,20 @@ class OtaService {
         sigResp.bodyBytes,
       );
       if (!valid) {
+        debugPrint('OTA: signature verification FAILED');
         return const OtaCheckError('Invalid signature');
       }
 
       final manifest =
           jsonDecode(manifestResp.body) as Map<String, dynamic>;
       final entry = manifest[appId] as Map<String, dynamic>?;
-      if (entry == null) return const OtaNoUpdate();
+      if (entry == null) {
+        debugPrint('OTA: appId "$appId" not found in manifest');
+        return const OtaNoUpdate();
+      }
 
       final latestCode = entry['versionCode'] as int;
+      debugPrint('OTA: remote=${entry['versionName']}+$latestCode local=$currentCode → ${latestCode > currentCode ? "UPDATE" : "no update"}');
       if (latestCode > currentCode) {
         return OtaUpdateAvailable(OtaUpdate(
           versionName: entry['versionName'] as String,
@@ -121,8 +129,10 @@ class OtaService {
       }
       return const OtaNoUpdate();
     } on SocketException {
+      debugPrint('OTA: no connection');
       return const OtaCheckError('No connection');
     } catch (e) {
+      debugPrint('OTA: error $e');
       return OtaCheckError(e.toString().length > 60
           ? '${e.toString().substring(0, 60)}…'
           : e.toString());

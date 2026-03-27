@@ -139,7 +139,7 @@ class _ChatScreenState extends State<ChatScreen> {
               style: const TextStyle(fontSize: 18, color: Colors.white),
               overflow: TextOverflow.ellipsis,
             ),
-            backgroundColor: Colors.black,
+            backgroundColor: Colors.white,
             actions: [
               if (provider.messages.any((m) => m.imagePath != null))
                 IconButton(
@@ -288,13 +288,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       const Expanded(
                         child: Text('Photo attached',
                             style: TextStyle(
-                                fontSize: 15, color: Colors.black54)),
+                                fontSize: 15, color: const Color(0xFF444444))),
                       ),
                       GestureDetector(
                         onTap: () =>
                             setState(() => _pendingImagePath = null),
                         child: const Icon(Icons.close,
-                            size: 18, color: Colors.black54),
+                            size: 18, color: const Color(0xFF444444)),
                       ),
                     ],
                   ),
@@ -372,7 +372,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide: const BorderSide(
-                                color: Color(0xFF888888)),
+                                color: Color(0xFF444444)),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
@@ -540,7 +540,7 @@ class _MessageBubble extends StatelessWidget {
                   Text(
                     isPlayingThis ? 'Pause' : 'Play',
                     style: const TextStyle(
-                        color: Colors.black54, fontSize: 15),
+                        color: const Color(0xFF444444), fontSize: 15),
                   ),
                 ],
               ),
@@ -613,7 +613,7 @@ class _LoadingBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
           toolStatus != null ? '\u23f3 $toolStatus' : '...',
-          style: TextStyle(color: Colors.black54, fontSize: fontSize),
+          style: TextStyle(color: const Color(0xFF444444), fontSize: fontSize),
         ),
       ),
     );
@@ -638,13 +638,13 @@ class _ConversationStarters extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_bubble_outline, size: 48, color: Colors.black38),
+            Icon(Icons.chat_bubble_outline, size: 48, color: const Color(0xFF444444)),
             const SizedBox(height: 12),
             Text(
               settings.kidsMode ? 'What do you want to do?' : 'Start a conversation',
               style: TextStyle(
                 fontSize: settings.kidsMode ? 22.0 : 16.0,
-                color: Colors.black54,
+                color: const Color(0xFF444444),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -696,7 +696,7 @@ class _QuickReplies extends StatelessWidget {
           onPressed: () => onTap(text),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.black,
-            side: const BorderSide(color: Colors.black54),
+            side: const BorderSide(color: const Color(0xFF444444)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -783,7 +783,7 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
                   ? const Center(
                       child: Text(
                         'No chats yet',
-                        style: TextStyle(color: Colors.black38, fontSize: 14),
+                        style: TextStyle(color: const Color(0xFF444444), fontSize: 14),
                       ),
                     )
                   : ListView.builder(
@@ -815,7 +815,7 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
                             padding: const EdgeInsets.only(right: 20),
                             color: Colors.black12,
                             child: const Icon(Icons.delete,
-                                color: Colors.black54),
+                                color: const Color(0xFF444444)),
                           ),
                           confirmDismiss: (_) async {
                             final state = context
@@ -843,7 +843,7 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
                             subtitle: Text(
                               _formatDate(session.updatedAt),
                               style: const TextStyle(
-                                  color: Colors.black54, fontSize: 14),
+                                  color: const Color(0xFF444444), fontSize: 14),
                             ),
                             selected: isCurrent,
                             selectedTileColor: Colors.black.withValues(alpha: 0.05),

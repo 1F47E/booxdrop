@@ -42,9 +42,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Drawings',
-            style: TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: FutureBuilder<List<File>>(
         future: _drawingsFuture,
@@ -58,7 +58,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
             return const Center(
               child: Text(
                 'No drawings yet — go draw something!',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+                style: TextStyle(fontSize: 16, color: const Color(0xFF444444)),
               ),
             );
           }
@@ -72,7 +72,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   child: Text(
                     '${drawings.length} drawing${drawings.length == 1 ? '' : 's'}',
                     style:
-                        const TextStyle(fontSize: 14, color: Colors.black54),
+                        const TextStyle(fontSize: 16, color: const Color(0xFF444444)),
                   ),
                 ),
               ),
@@ -97,9 +97,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
                           fit: BoxFit.cover,
                           cacheWidth: 300,
                           errorBuilder: (_, _, _) => Container(
-                            color: Colors.grey[200],
+                            color: const Color(0xFFDDDDDD),
                             child: const Icon(Icons.broken_image,
-                                color: Colors.black38),
+                                color: const Color(0xFF444444)),
                           ),
                         ),
                       ),

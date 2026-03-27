@@ -206,8 +206,8 @@ class _DrawingPadScreenState extends State<DrawingPadScreen> {
         appBar: AppBar(
           title: const Text('Draw something!',
               style: TextStyle(fontSize: 18, color: Colors.white)),
-          backgroundColor: Colors.black,
-          iconTheme: const IconThemeData(color: Colors.white),
+          backgroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.black),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () async {
@@ -278,7 +278,7 @@ class _DrawingPadScreenState extends State<DrawingPadScreen> {
                             color: c,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: selected ? Colors.black : Colors.black26,
+                              color: selected ? Colors.black : const Color(0xFF666666),
                               width: selected ? 3 : 1,
                             ),
                           ),
@@ -304,7 +304,7 @@ class _DrawingPadScreenState extends State<DrawingPadScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color:
-                                    selected ? Colors.black : Colors.black26,
+                                    selected ? Colors.black : const Color(0xFF666666),
                                 width: selected ? 2 : 1,
                               ),
                             ),
@@ -354,7 +354,7 @@ class _DrawingPadScreenState extends State<DrawingPadScreen> {
                         child: Material(
                           color: _hasStrokes && !_saving
                               ? Colors.black
-                              : Colors.black38,
+                              : const Color(0xFF444444),
                           borderRadius: BorderRadius.circular(8),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),

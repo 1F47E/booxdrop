@@ -136,7 +136,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
                 child: Text(
                   '${_currentIndex + 1} / ${widget.paths.length}',
                   style: const TextStyle(
-                      fontSize: 15, color: Colors.black54),
+                      fontSize: 15, color: const Color(0xFF444444)),
                 ),
               ),
             ),

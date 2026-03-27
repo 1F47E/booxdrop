@@ -162,8 +162,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         appBar: AppBar(
           title: const Text('Settings',
               style: TextStyle(fontSize: 18, color: Colors.white)),
-          backgroundColor: Colors.black,
-          iconTheme: const IconThemeData(color: Colors.white),
+          backgroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.black),
         ),
         body: Column(
           children: [
@@ -183,7 +183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: DropdownButton<String>(
                       value: _chatModel,
                       isExpanded: true,
-                      underline: Container(height: 1, color: Colors.black26),
+                      underline: Container(height: 1, color: const Color(0xFF666666)),
                       items: SettingsProvider.chatModelNames.entries
                           .map((e) => DropdownMenuItem(
                                 value: e.key,
@@ -211,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: DropdownButton<String>(
                       value: _reasoning,
                       isExpanded: true,
-                      underline: Container(height: 1, color: Colors.black26),
+                      underline: Container(height: 1, color: const Color(0xFF666666)),
                       items: SettingsProvider.reasoningLevels.entries
                           .map((e) => DropdownMenuItem(
                                 value: e.key,
@@ -229,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
 
                   // --- Chat Background ---
-                  const Divider(height: 1, color: Colors.black26),
+                  const Divider(height: 1, color: const Color(0xFF666666)),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Text('Chat Background',
@@ -252,14 +252,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
 
                   // --- Kids Mode ---
-                  const Divider(height: 1, color: Colors.black26),
+                  const Divider(height: 1, color: const Color(0xFF666666)),
                   SwitchListTile(
                     title: const Text('Kids Mode',
                         style: TextStyle(
                             fontSize: 17, fontWeight: FontWeight.w500)),
                     subtitle: const Text('Simpler answers with emojis'),
                     value: _kidsMode,
-                    activeTrackColor: Colors.black54,
+                    activeTrackColor: const Color(0xFF444444),
                     thumbColor:
                         const WidgetStatePropertyAll(Colors.black),
                     onChanged: (v) {
@@ -268,7 +268,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                   if (_kidsMode) ...[
-                    const Divider(height: 1, color: Colors.black26),
+                    const Divider(height: 1, color: const Color(0xFF666666)),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
@@ -285,7 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         divisions: 9,
                         label: '$_kidsAge',
                         activeColor: Colors.black,
-                        inactiveColor: Colors.black26,
+                        inactiveColor: const Color(0xFF666666),
                         onChanged: (v) {
                           setState(() => _kidsAge = v.round());
                           _markDirty();
@@ -298,16 +298,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('3',
-                              style: TextStyle(color: Colors.black54)),
+                              style: TextStyle(color: const Color(0xFF444444))),
                           Text('12',
-                              style: TextStyle(color: Colors.black54)),
+                              style: TextStyle(color: const Color(0xFF444444))),
                         ],
                       ),
                     ),
                   ],
 
                   // --- Text Size ---
-                  const Divider(height: 1, color: Colors.black26),
+                  const Divider(height: 1, color: const Color(0xFF666666)),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
@@ -324,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       divisions: 16,
                       label: '${_fontSize.round()}',
                       activeColor: Colors.black,
-                      inactiveColor: Colors.black26,
+                      inactiveColor: const Color(0xFF666666),
                       onChanged: (v) {
                         setState(() => _fontSize = v);
                         _markDirty();
@@ -343,7 +343,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   // --- Image Provider ---
                   if (s.availableImageProviders.length > 1) ...[
-                    const Divider(height: 1, color: Colors.black26),
+                    const Divider(height: 1, color: const Color(0xFF666666)),
                     const Padding(
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -375,7 +375,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   // --- Nano Banana Model ---
                   if (_imageProvider == 'nano_banana') ...[
-                    const Divider(height: 1, color: Colors.black26),
+                    const Divider(height: 1, color: const Color(0xFF666666)),
                     const Padding(
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -409,7 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   // --- Grok Model ---
                   if (_imageProvider == 'grok') ...[
-                    const Divider(height: 1, color: Colors.black26),
+                    const Divider(height: 1, color: const Color(0xFF666666)),
                     const Padding(
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -444,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   // --- TTS Provider ---
                   if (s.availableTtsProviders.isNotEmpty) ...[
-                    const Divider(height: 1, color: Colors.black26),
+                    const Divider(height: 1, color: const Color(0xFF666666)),
                     const Padding(
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -490,12 +490,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   .ttsProviderNames[_ttsProvider] ??
                               _ttsProvider,
                           style: const TextStyle(
-                              fontSize: 15, color: Colors.black54),
+                              fontSize: 15, color: const Color(0xFF444444)),
                         ),
                       ),
 
                     // --- Voice ---
-                    const Divider(height: 1, color: Colors.black26),
+                    const Divider(height: 1, color: const Color(0xFF666666)),
                     const Padding(
                       padding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -536,7 +536,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
 
                   // --- Gallery links ---
-                  const Divider(height: 1, color: Colors.black26),
+                  const Divider(height: 1, color: const Color(0xFF666666)),
                   ListTile(
                     leading: const Icon(Icons.photo_library,
                         color: Colors.black),
@@ -545,7 +545,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             fontSize: 17, fontWeight: FontWeight.w500)),
                     subtitle: const Text('View all generated images'),
                     trailing: const Icon(Icons.chevron_right,
-                        color: Colors.black54),
+                        color: const Color(0xFF444444)),
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -553,7 +553,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 const ImageGalleryScreen())),
                   ),
                   if (s.availableTtsProviders.isNotEmpty) ...[
-                    const Divider(height: 1, color: Colors.black26),
+                    const Divider(height: 1, color: const Color(0xFF666666)),
                     ListTile(
                       leading: const Icon(Icons.audiotrack,
                           color: Colors.black),
@@ -563,7 +563,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle:
                           const Text('View all generated audio'),
                       trailing: const Icon(Icons.chevron_right,
-                          color: Colors.black54),
+                          color: const Color(0xFF444444)),
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -571,7 +571,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   const AudioGalleryScreen())),
                     ),
                   ],
-                  const Divider(height: 1, color: Colors.black26),
+                  const Divider(height: 1, color: const Color(0xFF666666)),
                   ListTile(
                     leading: const Icon(Icons.article_outlined,
                         color: Colors.black),
@@ -580,13 +580,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             fontSize: 17, fontWeight: FontWeight.w500)),
                     subtitle: const Text('View app activity log'),
                     trailing: const Icon(Icons.chevron_right,
-                        color: Colors.black54),
+                        color: const Color(0xFF444444)),
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (_) => const LogsScreen())),
                   ),
-                  const Divider(height: 1, color: Colors.black26),
+                  const Divider(height: 1, color: const Color(0xFF666666)),
                   ListTile(
                     leading: const Icon(Icons.history,
                         color: Colors.black),
@@ -595,7 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             fontSize: 17, fontWeight: FontWeight.w500)),
                     subtitle: const Text('Version history'),
                     trailing: const Icon(Icons.chevron_right,
-                        color: Colors.black54),
+                        color: const Color(0xFF444444)),
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -609,7 +609,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(
                       'v${AppVersion.version}${AppVersion.buildDate.isNotEmpty ? ' \u00b7 ${AppVersion.buildDate}' : ''}',
                       style: const TextStyle(
-                          fontSize: 15, color: Colors.black38),
+                          fontSize: 15, color: const Color(0xFF444444)),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -617,7 +617,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(
                       'Built with \u2764\ufe0f for Mia and Iva',
                       style: TextStyle(
-                          fontSize: 15, color: Colors.black38),
+                          fontSize: 15, color: const Color(0xFF444444)),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -641,8 +641,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: ElevatedButton(
                   onPressed: canSave ? _save : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    disabledBackgroundColor: Colors.black26,
+                    backgroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFF666666),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),

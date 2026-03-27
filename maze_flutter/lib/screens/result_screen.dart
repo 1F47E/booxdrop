@@ -40,14 +40,14 @@ class ResultScreen extends StatelessWidget {
                 // Winner name
                 Text(
                   '${game.winnerName ?? "?"} found the treasure!',
-                  style: const TextStyle(fontSize: 18, color: Color(0xFF555555)),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF000000)),
                 ),
                 const SizedBox(height: 8),
 
                 // Move count
                 Text(
                   '${game.moveCount} moves',
-                  style: const TextStyle(fontSize: 16, color: Color(0xFF888888)),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF444444)),
                 ),
                 const SizedBox(height: 40),
 
@@ -79,12 +79,12 @@ class ResultScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF999999), width: 2),
+                      border: Border.all(color: const Color(0xFF000000), width: 2),
                     ),
                     alignment: Alignment.center,
                     child: const Text(
                       'Leave',
-                      style: TextStyle(fontSize: 16, color: Color(0xFF555555)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF000000)),
                     ),
                   ),
                 ),

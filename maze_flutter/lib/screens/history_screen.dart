@@ -129,11 +129,11 @@ class _MatchCard extends StatelessWidget {
                 children: [
                   Text(
                     _formatDate(match.playedAt),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF444444)),
                   ),
                   Text(
                     match.durationText,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF444444)),
                   ),
                 ],
               ),
@@ -142,18 +142,18 @@ class _MatchCard extends StatelessWidget {
               // Winner
               Row(
                 children: [
-                  const Text('\u{1F3C6} ', style: TextStyle(fontSize: 18)),
+                  const Text('\u{1F3C6} ', style: TextStyle(fontSize: 22)),
                   Text(
                     match.winnerName,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4CAF50),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF008800),
                     ),
                   ),
                   Text(
                     ' (${match.winnerMoves} moves)',
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, color: Color(0xFF444444)),
                   ),
                   if (match.winnerDeviceId == myDeviceId)
                     Container(
@@ -163,7 +163,7 @@ class _MatchCard extends StatelessWidget {
                         color: const Color(0xFF4CAF50),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text('You', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: const Text('You', style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w900)),
                     ),
                 ],
               ),
@@ -175,11 +175,11 @@ class _MatchCard extends StatelessWidget {
                   const SizedBox(width: 26),
                   Text(
                     match.loserName,
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF000000)),
                   ),
                   Text(
                     ' (${match.loserMoves} moves)',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF444444)),
                   ),
                   if (match.loserDeviceId == myDeviceId)
                     Container(
@@ -189,7 +189,7 @@ class _MatchCard extends StatelessWidget {
                         color: const Color(0xFFFF4444),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text('You', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: const Text('You', style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w900)),
                     ),
                 ],
               ),
@@ -197,7 +197,7 @@ class _MatchCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 'Tap to view mazes \u{2192}',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 16, color: const Color(0xFF444444)),
               ),
             ],
           ),
@@ -259,7 +259,7 @@ class _MatchDetailScreen extends StatelessWidget {
                   ),
                   Text(
                     _formatDate(match.playedAt),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF444444)),
                   ),
                 ],
               ),

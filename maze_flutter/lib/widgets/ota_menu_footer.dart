@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -67,10 +69,15 @@ class OtaMenuFooter extends StatelessWidget {
   Widget _buildAction(OtaState state) {
     switch (state.phase) {
       case OtaPhase.idle:
-      case OtaPhase.checking:
       case OtaPhase.noUpdate:
       case OtaPhase.checkError:
         return const SizedBox.shrink();
+
+      case OtaPhase.checking:
+        return const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: _AnimatedDots(text: 'Checking for updates'),
+        );
 
       case OtaPhase.updateAvailable:
       case OtaPhase.downloadError:
@@ -124,6 +131,12 @@ class OtaMenuFooter extends StatelessWidget {
           ),
         );
 
+      case OtaPhase.verifying:
+        return const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: _AnimatedDots(text: 'Verifying'),
+        );
+
       case OtaPhase.permissionRequired:
         final label = state.update != null
             ? 'Continue update to ${state.update!.versionName}'
@@ -159,11 +172,44 @@ class OtaMenuFooter extends StatelessWidget {
       case OtaPhase.installing:
         return const Padding(
           padding: EdgeInsets.only(bottom: 8),
-          child: Text(
-            'Opening installer…',
-            style: TextStyle(color: Colors.black54, fontSize: 17),
-          ),
+          child: _AnimatedDots(text: 'Installing'),
         );
     }
+  }
+}
+
+/// Displays "Text..." with cycling dots (1→2→3→1→…).
+class _AnimatedDots extends StatefulWidget {
+  const _AnimatedDots({required this.text});
+  final String text;
+
+  @override
+  State<_AnimatedDots> createState() => _AnimatedDotsState();
+}
+
+class _AnimatedDotsState extends State<_AnimatedDots> {
+  int _dots = 1;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      setState(() => _dots = (_dots % 3) + 1);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '${widget.text}${'.' * _dots}',
+      style: const TextStyle(color: Colors.black54, fontSize: 17),
+    );
   }
 }

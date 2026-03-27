@@ -158,7 +158,7 @@ class BuilderScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       color: bg,
       child: Text(text, textAlign: TextAlign.center,
-        style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 14)),
+        style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 18)),
     );
   }
 }
@@ -291,7 +291,7 @@ class _MazeGrid extends StatelessWidget {
             child: Center(
               child: Text(
                 _tileEmoji(tile, isStart),
-                style: const TextStyle(fontSize: 20),
+                style: const TextStyle(fontSize: 22),
               ),
             ),
           ),
@@ -301,24 +301,24 @@ class _MazeGrid extends StatelessWidget {
   }
 
   Color _tileColor(int tile, bool isStart) {
-    if (isStart) return const Color(0xFFC8FFC8);
+    if (isStart) return const Color(0xFF00CC00);
     return switch (tile) {
-      Tile.wall => const Color(0xFF2C2C3A),
-      Tile.key => const Color(0xFFFFF8DC),
-      Tile.door => const Color(0xFFE0D4FF),
-      Tile.treasure => const Color(0xFFFFE0E0),
-      _ => const Color(0xFFE8E8F0),
+      Tile.wall => const Color(0xFF222222),
+      Tile.key => const Color(0xFFFFDD00),
+      Tile.door => const Color(0xFF7700CC),
+      Tile.treasure => const Color(0xFFFF0000),
+      _ => const Color(0xFFF5F5F5),
     };
   }
 
   Color _tileBorder(int tile, bool isStart) {
-    if (isStart) return const Color(0xFF4CAF50);
+    if (isStart) return const Color(0xFF006600);
     return switch (tile) {
-      Tile.wall => const Color(0xFF555555),
-      Tile.key => const Color(0xFFFFD700),
-      Tile.door => const Color(0xFF7C4DFF),
-      Tile.treasure => const Color(0xFFFF4444),
-      _ => const Color(0xFFCCCCCC),
+      Tile.wall => const Color(0xFF000000),
+      Tile.key => const Color(0xFFCC9900),
+      Tile.door => const Color(0xFF5500AA),
+      Tile.treasure => const Color(0xFFCC0000),
+      _ => const Color(0xFFBBBBBB),
     };
   }
 
@@ -341,11 +341,11 @@ class _ToolPalette extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tools = [
-      (Tile.wall, '\u2B1B', 'Wall', const Color(0xFF2C2C3A)),
-      (Tile.floor, '\u2B1C', 'Erase', const Color(0xFFE8E8F0)),
-      (Tile.key, '\u{1F511}', 'Key', const Color(0xFFFFD700)),
-      (Tile.door, '\u{1F6AA}', 'Door', const Color(0xFF7C4DFF)),
-      (Tile.treasure, '\u{1F48E}', 'Gem', const Color(0xFFFF4444)),
+      (Tile.wall, '\u2B1B', 'Wall', const Color(0xFF222222)),
+      (Tile.floor, '\u2B1C', 'Erase', const Color(0xFF666666)),
+      (Tile.key, '\u{1F511}', 'Key', const Color(0xFFCC9900)),
+      (Tile.door, '\u{1F6AA}', 'Door', const Color(0xFF7700CC)),
+      (Tile.treasure, '\u{1F48E}', 'Gem', const Color(0xFFFF0000)),
     ];
 
     return Container(
@@ -371,8 +371,8 @@ class _ToolPalette extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(emoji, style: const TextStyle(fontSize: 22)),
-                  Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
+                  Text(emoji, style: const TextStyle(fontSize: 26)),
+                  Text(label, style: TextStyle(fontSize: 14, color: color, fontWeight: FontWeight.w900)),
                 ],
               ),
             ),

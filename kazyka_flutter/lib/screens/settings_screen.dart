@@ -31,9 +31,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings',
-            style: TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -54,7 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 borderSide: const BorderSide(color: Colors.black),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Color(0xFF888888)),
+                borderSide: const BorderSide(color: Color(0xFF444444)),
               ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -67,13 +67,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           const Text(
             'This name appears on the drawing screen',
-            style: TextStyle(fontSize: 13, color: Colors.black54),
+            style: TextStyle(fontSize: 16, color: const Color(0xFF444444)),
           ),
           const SizedBox(height: 32),
           Center(
             child: Text(
               'Kazyka v${AppVersion.version}${AppVersion.buildDate.isNotEmpty ? ' \u00b7 ${AppVersion.buildDate}' : ''}',
-              style: const TextStyle(fontSize: 13, color: Colors.black38),
+              style: const TextStyle(fontSize: 16, color: const Color(0xFF444444)),
             ),
           ),
         ],

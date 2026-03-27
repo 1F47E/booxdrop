@@ -57,10 +57,15 @@ class BooxChatApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
-        useMaterial3: true,
+        useMaterial3: false,
+        scaffoldBackgroundColor: Colors.white,
         // E-ink: disable all ripple/splash effects (cause ghosting)
         splashFactory: NoSplash.splashFactory,
         highlightColor: Colors.transparent,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(elevation: 0, shadowColor: Colors.transparent),
+        ),
+        appBarTheme: const AppBarTheme(elevation: 0, shadowColor: Colors.transparent),
         // E-ink: disable page transition animations
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {

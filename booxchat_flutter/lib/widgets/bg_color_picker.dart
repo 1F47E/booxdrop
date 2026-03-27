@@ -47,7 +47,7 @@ class BgColorPicker extends StatelessWidget {
                   color: adjusted,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? Colors.black : Colors.black26,
+                    color: isSelected ? Colors.black : const Color(0xFF666666),
                     width: isSelected ? 3 : 1,
                   ),
                 ),
@@ -61,7 +61,7 @@ class BgColorPicker extends StatelessWidget {
         // Brightness slider
         Row(
           children: [
-            const Icon(Icons.brightness_low, size: 18, color: Colors.black38),
+            const Icon(Icons.brightness_low, size: 18, color: const Color(0xFF444444)),
             Expanded(
               child: Slider(
                 value: brightness,
@@ -69,7 +69,7 @@ class BgColorPicker extends StatelessWidget {
                 max: 1.0,
                 divisions: 10,
                 activeColor: Colors.black,
-                inactiveColor: Colors.black26,
+                inactiveColor: const Color(0xFF666666),
                 onChanged: onBrightnessChanged,
               ),
             ),

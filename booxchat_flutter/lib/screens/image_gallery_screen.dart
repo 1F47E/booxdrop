@@ -54,8 +54,8 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       appBar: AppBar(
         title: const Text('Images',
             style: TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: FutureBuilder<List<File>>(
         future: _imagesFuture,
@@ -68,7 +68,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
             return const Center(
               child: Text(
                 'No images yet',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+                style: TextStyle(fontSize: 16, color: const Color(0xFF444444)),
               ),
             );
           }
@@ -80,7 +80,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     '${images.length} image${images.length == 1 ? '' : 's'}',
-                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                    style: const TextStyle(fontSize: 14, color: const Color(0xFF444444)),
                   ),
                 ),
               ),
@@ -104,9 +104,9 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                           fit: BoxFit.cover,
                           cacheWidth: 300,
                           errorBuilder: (_, __, ___) => Container(
-                            color: Colors.grey[200],
+                            color: const Color(0xFFDDDDDD),
                             child: const Icon(Icons.broken_image,
-                                color: Colors.black38),
+                                color: const Color(0xFF444444)),
                           ),
                         ),
                       ),

@@ -72,8 +72,8 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
       appBar: AppBar(
         title: const Text('Audio',
             style: TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: FutureBuilder<List<File>>(
         future: _audioFuture,
@@ -87,7 +87,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
             return const Center(
               child: Text(
                 'No audio yet',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+                style: TextStyle(fontSize: 16, color: const Color(0xFF444444)),
               ),
             );
           }
@@ -101,7 +101,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
                   child: Text(
                     '${files.length} clip${files.length == 1 ? '' : 's'}',
                     style:
-                        const TextStyle(fontSize: 14, color: Colors.black54),
+                        const TextStyle(fontSize: 14, color: const Color(0xFF444444)),
                   ),
                 ),
               ),
@@ -146,11 +146,11 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
                       subtitle: Text(
                         _formatDate(file),
                         style: const TextStyle(
-                            fontSize: 14, color: Colors.black54),
+                            fontSize: 14, color: const Color(0xFF444444)),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete,
-                            color: Colors.black54, size: 20),
+                            color: const Color(0xFF444444), size: 20),
                         onPressed: () => _deleteAudio(file.path),
                       ),
                     );

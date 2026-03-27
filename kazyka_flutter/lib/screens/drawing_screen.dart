@@ -335,7 +335,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
       appBar: AppBar(
         leading: Builder(
           builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
+            icon: const Icon(Icons.menu, color: Colors.black),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
@@ -344,12 +344,12 @@ class _DrawingScreenState extends State<DrawingScreen> {
             final name = settings.name;
             return Text(
               name.isEmpty ? 'Kazyka' : '$name\'s Kazyka',
-              style: const TextStyle(fontSize: 20, color: Colors.white),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
               overflow: TextOverflow.ellipsis,
             );
           },
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white,
         actions: [
           Consumer<LiveSessionProvider>(
             builder: (_, session, _) => TextButton(
@@ -357,9 +357,9 @@ class _DrawingScreenState extends State<DrawingScreen> {
               child: Text(
                 session.isLive ? 'LIVE' : 'Live',
                 style: TextStyle(
-                  color: session.isLive ? Colors.green : Colors.white,
+                  color: session.isLive ? Colors.green : Colors.black,
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                  fontSize: 18,
                 ),
               ),
             ),
@@ -415,7 +415,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
                       ],
                       onPressed: (i) => setState(
                           () => _tool = i == 0 ? _Tool.pen : _Tool.text),
-                      borderColor: Colors.black26,
+                      borderColor: const Color(0xFF666666),
                       selectedBorderColor: Colors.black,
                       selectedColor: Colors.white,
                       fillColor: Colors.black,
@@ -423,8 +423,8 @@ class _DrawingScreenState extends State<DrawingScreen> {
                       constraints:
                           const BoxConstraints(minWidth: 40, minHeight: 40),
                       children: const [
-                        Icon(Icons.edit, size: 20),
-                        Icon(Icons.text_fields, size: 20),
+                        Icon(Icons.edit, size: 28),
+                        Icon(Icons.text_fields, size: 28),
                       ],
                     ),
 
@@ -476,14 +476,14 @@ class _DrawingScreenState extends State<DrawingScreen> {
                       child: Material(
                         color: _hasContent && !_saving
                             ? Colors.black
-                            : Colors.black38,
+                            : const Color(0xFF444444),
                         borderRadius: BorderRadius.circular(8),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(8),
                           onTap:
                               _hasContent && !_saving ? _onSave : null,
                           child: const Icon(Icons.save,
-                              color: Colors.white, size: 22),
+                              color: Colors.white, size: 28),
                         ),
                       ),
                     ),

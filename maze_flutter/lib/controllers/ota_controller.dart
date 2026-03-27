@@ -20,6 +20,7 @@ enum OtaPhase {
   updateAvailable,
   checkError,
   downloading,
+  verifying,
   permissionRequired,
   installing,
   downloadError,
@@ -219,6 +220,7 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
       if (myOp != _opId) return;
 
       // Verify SHA-256
+      _setState(_state.copyWith(phase: OtaPhase.verifying));
       final valid = await OtaService.verifyApk(file, update.sha256);
       if (!valid) {
         await file.delete();

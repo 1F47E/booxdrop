@@ -39,7 +39,7 @@ class ColorPicker extends StatelessWidget {
               color: c,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? Colors.black : Colors.black26,
+                color: isSelected ? Colors.black : const Color(0xFF666666),
                 width: isSelected ? 3 : 1,
               ),
             ),
