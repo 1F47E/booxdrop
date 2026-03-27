@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:provider/provider.dart';
+import '../controllers/audio_playback_controller.dart';
 import '../services/storage_service.dart';
 
 class AudioGalleryScreen extends StatefulWidget {
@@ -13,46 +13,17 @@ class AudioGalleryScreen extends StatefulWidget {
 
 class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
   late Future<List<File>> _audioFuture;
-  final AudioPlayer _player = AudioPlayer();
-  String? _playingPath;
-  StreamSubscription? _playerSub;
 
   @override
   void initState() {
     super.initState();
     _audioFuture = StorageService.listAudio();
-    _playerSub = _player.playerStateStream.listen((state) {
-      if (state.processingState == ProcessingState.completed) {
-        if (mounted) setState(() => _playingPath = null);
-        _player.stop();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _playerSub?.cancel();
-    _player.stop();
-    _player.dispose();
-    super.dispose();
   }
 
   void _refresh() {
     setState(() {
       _audioFuture = StorageService.listAudio();
     });
-  }
-
-  void _togglePlay(String path) async {
-    if (_playingPath == path) {
-      await _player.stop();
-      setState(() => _playingPath = null);
-    } else {
-      await _player.stop();
-      await _player.setFilePath(path);
-      await _player.play();
-      setState(() => _playingPath = path);
-    }
   }
 
   Future<void> _deleteAudio(String path) async {
@@ -76,9 +47,9 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
       ),
     );
     if (confirmed == true) {
-      if (_playingPath == path) {
-        await _player.stop();
-        setState(() => _playingPath = null);
+      final controller = context.read<AudioPlaybackController>();
+      if (controller.isCurrentTrack(path)) {
+        await controller.stopAndClear();
       }
       await StorageService.deleteAudio(path);
       _refresh();
@@ -139,14 +110,26 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
                   itemCount: files.length,
                   itemBuilder: (context, index) {
                     final file = files[index];
-                    final isPlaying = _playingPath == file.path;
+                    final controller = context.watch<AudioPlaybackController>();
+                    final isPlaying = controller.isCurrentTrack(file.path) &&
+                        controller.isPlaying;
+                    final isCurrent = controller.isCurrentTrack(file.path);
                     return ListTile(
-                      leading: GestureDetector(
-                        onTap: () => _togglePlay(file.path),
-                        child: Icon(
-                          isPlaying ? Icons.stop : Icons.play_arrow,
-                          color: Colors.black,
-                          size: 28,
+                      leading: SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: IconButton(
+                          onPressed: () {
+                            context.read<AudioPlaybackController>().togglePlay(
+                              path: file.path,
+                              label: _formatName(file),
+                            );
+                          },
+                          icon: Icon(
+                            isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.black,
+                            size: 36,
+                          ),
                         ),
                       ),
                       title: Text(
@@ -156,7 +139,7 @@ class _AudioGalleryScreenState extends State<AudioGalleryScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight:
-                              isPlaying ? FontWeight.bold : FontWeight.normal,
+                              isCurrent ? FontWeight.bold : FontWeight.normal,
                           color: Colors.black,
                         ),
                       ),

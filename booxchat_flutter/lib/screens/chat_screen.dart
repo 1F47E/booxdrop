@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
+import '../controllers/audio_playback_controller.dart';
+import '../widgets/audio_player_bar.dart';
 import 'full_screen_image.dart';
 import '../data/prompt_suggestions.dart';
 import '../models/message.dart';
@@ -176,6 +176,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   icon: Icons.warning_amber,
                   text: provider.apiKeyWarning!,
                 ),
+
+              // Persistent audio player bar
+              const AudioPlayerBar(),
 
               // Message list or conversation starters
               Expanded(
@@ -424,21 +427,11 @@ class _WarningBanner extends StatelessWidget {
   }
 }
 
-class _MessageBubble extends StatefulWidget {
+class _MessageBubble extends StatelessWidget {
   final Message message;
   final List<String> chatImagePaths;
   const _MessageBubble(
       {super.key, required this.message, required this.chatImagePaths});
-
-  @override
-  State<_MessageBubble> createState() => _MessageBubbleState();
-}
-
-class _MessageBubbleState extends State<_MessageBubble> {
-  AudioPlayer? _player;
-  bool _isPlaying = false;
-  bool _toggling = false;
-  StreamSubscription? _playerSub;
 
   static void _showFullScreenImage(
       BuildContext context, String path, List<String> allPaths) {
@@ -451,56 +444,19 @@ class _MessageBubbleState extends State<_MessageBubble> {
     );
   }
 
-  void _toggleAudio() async {
-    if (_toggling) return;
-    _toggling = true;
-    try {
-      if (_player == null) {
-        _player = AudioPlayer();
-        _playerSub = _player!.playerStateStream.listen((state) {
-          final playing = state.playing &&
-              state.processingState != ProcessingState.completed;
-          if (mounted && _isPlaying != playing) {
-            setState(() => _isPlaying = playing);
-          }
-          if (state.processingState == ProcessingState.completed) {
-            _player?.stop();
-            _player?.seek(Duration.zero);
-          }
-        });
-      }
-
-      if (_isPlaying) {
-        await _player!.stop();
-        if (mounted) setState(() => _isPlaying = false);
-      } else {
-        try {
-          await _player!.setFilePath(widget.message.audioPath!);
-          await _player!.play();
-        } catch (_) {
-          if (mounted) setState(() => _isPlaying = false);
-        }
-      }
-    } finally {
-      _toggling = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _playerSub?.cancel();
-    _player?.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final message = widget.message;
     final isUser = message.role == 'user';
     final settings = context.watch<SettingsProvider>();
     final fontSize = settings.fontSize;
 
     final isFailed = message.status == MessageStatus.failed;
+
+    // Audio state from shared controller — only rebuilds this bubble when
+    // its own track state changes.
+    final isPlayingThis = context.select<AudioPlaybackController, bool>(
+      (c) => c.isCurrentTrack(message.audioPath) && c.isPlaying,
+    );
 
     return Column(
       crossAxisAlignment:
@@ -548,31 +504,41 @@ class _MessageBubbleState extends State<_MessageBubble> {
               ),
             if (message.audioPath != null && !isUser) ...[
               const SizedBox(height: 4),
-              GestureDetector(
-                onTap: _toggleAudio,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isPlaying ? Icons.stop : Icons.play_arrow,
-                      color: Colors.black,
-                      size: 28,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: IconButton(
+                      onPressed: () {
+                        context.read<AudioPlaybackController>().togglePlay(
+                          path: message.audioPath!,
+                          label: displayText.isEmpty ? 'Audio' : displayText,
+                          sessionId: context.read<ChatProvider>().currentSessionId,
+                        );
+                      },
+                      icon: Icon(
+                        isPlayingThis ? Icons.pause : Icons.play_arrow,
+                        color: Colors.black,
+                        size: 36,
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _isPlaying ? 'Stop' : 'Play',
-                      style: const TextStyle(
-                          color: Colors.black54, fontSize: 15),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isPlayingThis ? 'Pause' : 'Play',
+                    style: const TextStyle(
+                        color: Colors.black54, fontSize: 15),
+                  ),
+                ],
               ),
             ],
             if (message.imagePath != null) ...[
               if (displayText.isNotEmpty) const SizedBox(height: 8),
               GestureDetector(
                 onTap: () => _showFullScreenImage(
-                    context, message.imagePath!, widget.chatImagePaths),
+                    context, message.imagePath!, chatImagePaths),
                 child: FractionallySizedBox(
                   widthFactor: 0.5,
                   alignment: Alignment.centerLeft,
