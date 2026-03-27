@@ -6,8 +6,10 @@ import '../providers/live_session_provider.dart';
 import '../services/device_identity_service.dart';
 import '../services/settings_service.dart';
 import '../services/storage_service.dart';
+import '../controllers/ota_controller.dart';
 import '../widgets/color_picker.dart';
 import '../widgets/drawing_canvas.dart';
+import '../widgets/ota_menu_footer.dart';
 import '../widgets/session_status_banner.dart';
 import '../widgets/stroke_picker.dart';
 import '../widgets/text_tool_dialog.dart';
@@ -328,8 +330,15 @@ class _DrawingScreenState extends State<DrawingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final otaController = context.read<OtaController>();
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
         title: Consumer<SettingsService>(
           builder: (_, settings, _) {
             final name = settings.name;
@@ -355,24 +364,9 @@ class _DrawingScreenState extends State<DrawingScreen> {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.photo_library, color: Colors.white),
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const GalleryScreen()));
-            },
-            tooltip: 'Gallery',
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()));
-            },
-            tooltip: 'Settings',
-          ),
         ],
       ),
+      drawer: _KazykaDrawer(otaController: otaController),
       body: Column(
         children: [
           // Live session banner
@@ -499,6 +493,83 @@ class _DrawingScreenState extends State<DrawingScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _KazykaDrawer extends StatefulWidget {
+  final OtaController otaController;
+  const _KazykaDrawer({required this.otaController});
+
+  @override
+  State<_KazykaDrawer> createState() => _KazykaDrawerState();
+}
+
+class _KazykaDrawerState extends State<_KazykaDrawer> {
+  @override
+  void initState() {
+    super.initState();
+    widget.otaController.onMenuOpened();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.black)),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Kazyka',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Menu items
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.black),
+              title: const Text('Gallery',
+                  style: TextStyle(color: Colors.black)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const GalleryScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings, color: Colors.black),
+              title: const Text('Settings',
+                  style: TextStyle(color: Colors.black)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              },
+            ),
+
+            const Spacer(),
+
+            // OTA update footer
+            OtaMenuFooter(controller: widget.otaController),
+          ],
+        ),
       ),
     );
   }

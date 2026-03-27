@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'controllers/ota_controller.dart';
 import 'providers/chat_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/chat_screen.dart';
@@ -10,6 +11,7 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
 
   final settingsProvider = SettingsProvider();
+  final otaController = OtaController(appId: 'booxchat');
 
   runApp(
     MultiProvider(
@@ -18,10 +20,13 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => ChatProvider(settingsProvider),
         ),
+        ChangeNotifierProvider.value(value: otaController),
       ],
       child: const BooxChatApp(),
     ),
   );
+
+  otaController.onAppStarted();
 }
 
 /// No-op page transition for e-ink: just shows the child, no animation.

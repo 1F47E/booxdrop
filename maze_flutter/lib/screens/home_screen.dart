@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../controllers/ota_controller.dart';
 import '../providers/game_provider.dart';
+import '../widgets/ota_menu_footer.dart';
 import 'history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,8 +36,27 @@ class _HomeScreenState extends State<HomeScreen> {
     final game = context.watch<GameProvider>();
     final isLobby = game.phase == GamePhase.lobby;
 
+    final otaController = context.read<OtaController>();
     return Scaffold(
       backgroundColor: const Color(0xFFF0E6FF),
+      appBar: AppBar(
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF7C4DFF)),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        title: const Text(
+          'Maze Race',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF7C4DFF),
+          ),
+        ),
+        backgroundColor: const Color(0xFFF0E6FF),
+        elevation: 0,
+      ),
+      drawer: _MazeDrawer(otaController: otaController),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -43,17 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Title
-                const Text(
-                  'Maze Race',
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF7C4DFF),
-                    letterSpacing: -1,
-                  ),
-                ),
-                const SizedBox(height: 4),
+                // Tagline
                 const Text(
                   'Build. Swap. Race!',
                   style: TextStyle(fontSize: 18, color: Color(0xFF9575CD)),
@@ -284,6 +295,74 @@ class _BannerWidget extends StatelessWidget {
         text,
         textAlign: TextAlign.center,
         style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 15),
+      ),
+    );
+  }
+}
+
+class _MazeDrawer extends StatefulWidget {
+  final OtaController otaController;
+  const _MazeDrawer({required this.otaController});
+
+  @override
+  State<_MazeDrawer> createState() => _MazeDrawerState();
+}
+
+class _MazeDrawerState extends State<_MazeDrawer> {
+  @override
+  void initState() {
+    super.initState();
+    widget.otaController.onMenuOpened();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.black)),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Maze Race',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF7C4DFF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Menu items
+            ListTile(
+              leading: const Icon(Icons.history, color: Color(0xFF7C4DFF)),
+              title: const Text('Match History',
+                  style: TextStyle(color: Colors.black)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                );
+              },
+            ),
+
+            const Spacer(),
+
+            // OTA update footer
+            OtaMenuFooter(controller: widget.otaController),
+          ],
+        ),
       ),
     );
   }

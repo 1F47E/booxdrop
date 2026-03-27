@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'controllers/ota_controller.dart';
 import 'providers/game_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/builder_screen.dart';
@@ -7,12 +8,20 @@ import 'screens/race_screen.dart';
 import 'screens/result_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  final otaController = OtaController(appId: 'maze_race');
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => GameProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => GameProvider()),
+        ChangeNotifierProvider.value(value: otaController),
+      ],
       child: const MazeRaceApp(),
     ),
   );
+
+  otaController.onAppStarted();
 }
 
 class MazeRaceApp extends StatelessWidget {

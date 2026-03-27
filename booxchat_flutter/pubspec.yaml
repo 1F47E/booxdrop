@@ -18,6 +18,9 @@ dependencies:
   image_picker: ^1.0.0
   image_gallery_saver_plus: ^4.0.1
   just_audio: ^0.10.5
+  package_info_plus: ^8.0.0
+  crypto: ^3.0.0
+  cryptography: ^2.7.0
 
 dev_dependencies:
   flutter_test:

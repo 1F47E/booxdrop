@@ -10,6 +10,8 @@ import '../providers/chat_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
 import '../services/image_picker_service.dart';
+import '../controllers/ota_controller.dart';
+import '../widgets/ota_menu_footer.dart';
 import 'drawing_pad_screen.dart';
 import 'settings_screen.dart';
 
@@ -155,7 +157,10 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
-          drawer: _HistoryDrawer(provider: provider),
+          drawer: _HistoryDrawer(
+            provider: provider,
+            otaController: context.read<OtaController>(),
+          ),
           body: Column(
             children: [
               // Offline banner
@@ -734,7 +739,11 @@ class _QuickReplies extends StatelessWidget {
 
 class _HistoryDrawer extends StatefulWidget {
   final ChatProvider provider;
-  const _HistoryDrawer({required this.provider});
+  final OtaController otaController;
+  const _HistoryDrawer({
+    required this.provider,
+    required this.otaController,
+  });
 
   @override
   State<_HistoryDrawer> createState() => _HistoryDrawerState();
@@ -742,6 +751,12 @@ class _HistoryDrawer extends StatefulWidget {
 
 class _HistoryDrawerState extends State<_HistoryDrawer> {
   int _visibleCount = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.otaController.onMenuOpened();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -865,7 +880,7 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
                     ),
             ),
 
-            // Settings at bottom
+            // Settings
             Container(
               decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: Colors.black)),
@@ -886,6 +901,9 @@ class _HistoryDrawerState extends State<_HistoryDrawer> {
                 },
               ),
             ),
+
+            // OTA update footer
+            OtaMenuFooter(controller: widget.otaController),
           ],
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'controllers/ota_controller.dart';
 import 'providers/live_session_provider.dart';
 import 'screens/drawing_screen.dart';
 import 'services/collaboration_transport.dart';
@@ -14,12 +15,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final identity = DeviceIdentityService();
   await identity.init();
-  runApp(KazykaApp(identity: identity));
+  final otaController = OtaController(appId: 'kazyka');
+  runApp(KazykaApp(identity: identity, otaController: otaController));
+  otaController.onAppStarted();
 }
 
 class KazykaApp extends StatelessWidget {
   final DeviceIdentityService identity;
-  const KazykaApp({super.key, required this.identity});
+  final OtaController otaController;
+  const KazykaApp({
+    super.key,
+    required this.identity,
+    required this.otaController,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +43,7 @@ class KazykaApp extends StatelessWidget {
           create: (_) => LiveSessionProvider(transport),
         ),
         Provider.value(value: identity),
+        ChangeNotifierProvider.value(value: otaController),
       ],
       child: MaterialApp(
         title: 'Kazyka',
