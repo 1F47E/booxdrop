@@ -33,11 +33,26 @@ class MazeRaceApp extends StatelessWidget {
       title: 'Maze Race',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7C4DFF),
-          brightness: Brightness.light,
+        useMaterial3: false,
+        scaffoldBackgroundColor: Colors.white,
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            shadowColor: Colors.transparent,
+          ),
         ),
-        useMaterial3: true,
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            elevation: 0,
+            shadowColor: Colors.transparent,
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          shadowColor: Colors.transparent,
+        ),
       ),
       home: const GameRouter(),
     );

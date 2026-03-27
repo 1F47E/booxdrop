@@ -12,7 +12,7 @@ class BuilderScreen extends StatelessWidget {
     final isCountdown = game.phase == GamePhase.countdown;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0E6FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFF7C4DFF),
         foregroundColor: Colors.white,
@@ -64,25 +64,26 @@ class BuilderScreen extends StatelessWidget {
                 onSelect: game.selectTool,
               ),
 
-              // Done button
+              // Done button — flat
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: game.maze.isLocallyValid ? game.toggleDone : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: game.isDone ? Colors.green : const Color(0xFF4CAF50),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey.shade300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                child: GestureDetector(
+                  onTap: game.maze.isLocallyValid ? game.toggleDone : null,
+                  child: Container(
+                    width: double.infinity,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: !game.maze.isLocallyValid
+                          ? Colors.grey.shade300
+                          : game.isDone
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFF4CAF50),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    alignment: Alignment.center,
                     child: Text(
                       game.isDone ? 'Done \u2713' : 'Done',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),
                 ),

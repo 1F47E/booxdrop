@@ -11,11 +11,12 @@ class RaceScreen extends StatelessWidget {
     final game = context.watch<GameProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: const Color(0xFF7C4DFF),
         foregroundColor: Colors.white,
-        title: const Text('Race!', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
+        title: const Text('Race!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: game.leave,
@@ -26,7 +27,7 @@ class RaceScreen extends StatelessWidget {
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: game.hasKey ? const Color(0xFFFFD700) : const Color(0xFF333333),
+              color: game.hasKey ? const Color(0xFFFFD700) : Colors.white24,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -34,17 +35,18 @@ class RaceScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: game.hasKey ? Colors.black : const Color(0xFF666666),
+                color: game.hasKey ? Colors.black : Colors.white70,
               ),
             ),
           ),
           // Move counter
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Text(
-              'Moves: ${game.moveCount}',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Text(
+                '${game.moveCount}',
+                style: const TextStyle(fontSize: 14, color: Colors.white70),
+              ),
             ),
           ),
         ],
@@ -59,14 +61,14 @@ class RaceScreen extends StatelessWidget {
           if (game.opponentEvent != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-              color: const Color(0xFF1A2A3E),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+              color: const Color(0xFFE3F2FD),
               child: Text(
                 game.opponentEvent!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF4FC3F7),
+                  fontSize: 14,
+                  color: Color(0xFF1565C0),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -76,7 +78,7 @@ class RaceScreen extends StatelessWidget {
           Expanded(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: _RaceGrid(
@@ -91,7 +93,7 @@ class RaceScreen extends StatelessWidget {
           // D-pad controls
           _DPad(onMove: game.move),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -106,10 +108,10 @@ class _RaceBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = {
-      'info': (const Color(0xFF1A2A3E), const Color(0xFF4FC3F7)),
-      'success': (const Color(0xFF1A3A1E), const Color(0xFF4CAF50)),
-      'warning': (const Color(0xFF3A3A1E), const Color(0xFFFFD700)),
-      'error': (const Color(0xFF3A1A1E), const Color(0xFFFF4444)),
+      'info': (const Color(0xFFE3F2FD), const Color(0xFF1565C0)),
+      'success': (const Color(0xFFE8F5E9), const Color(0xFF2E7D32)),
+      'warning': (const Color(0xFFFFF8E1), const Color(0xFFE65100)),
+      'error': (const Color(0xFFFFEBEE), const Color(0xFFC62828)),
     };
     final (bg, fg) = colors[type] ?? colors['info']!;
     return Container(
@@ -117,7 +119,7 @@ class _RaceBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       color: bg,
       child: Text(text, textAlign: TextAlign.center,
-        style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 14)),
+        style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 15)),
     );
   }
 }
@@ -153,12 +155,9 @@ class _RaceGrid extends StatelessWidget {
             color: _tileColor(tile),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: _tileBorder(tile),
-              width: tile == Tile.hidden ? 0.5 : 2,
+              color: isPlayer ? const Color(0xFF4CAF50) : _tileBorder(tile),
+              width: isPlayer ? 3 : (tile == Tile.hidden ? 1 : 2),
             ),
-            boxShadow: isPlayer
-                ? [BoxShadow(color: const Color(0xFF4CAF50).withValues(alpha: 0.6), blurRadius: 8)]
-                : null,
           ),
           child: Center(
             child: Text(
@@ -173,26 +172,26 @@ class _RaceGrid extends StatelessWidget {
 
   Color _tileColor(int tile) {
     return switch (tile) {
-      Tile.hidden => const Color(0xFF1A1A2E),
-      Tile.floor => const Color(0xFFE8E8F0),
-      Tile.wall => const Color(0xFF2C2C3A),
-      Tile.key => const Color(0xFFFFF8DC),
-      Tile.door => const Color(0xFFE0D4FF),
-      Tile.treasure => const Color(0xFFFFE0E0),
-      Tile.openDoor => const Color(0xFFF0E6FF),
-      _ => const Color(0xFFE8E8F0),
+      Tile.hidden => const Color(0xFFDDDDDD),
+      Tile.floor => Colors.white,
+      Tile.wall => const Color(0xFF333333),
+      Tile.key => const Color(0xFFFFF9C4),
+      Tile.door => const Color(0xFFE1BEE7),
+      Tile.treasure => const Color(0xFFFFCDD2),
+      Tile.openDoor => const Color(0xFFF3E5F5),
+      _ => Colors.white,
     };
   }
 
   Color _tileBorder(int tile) {
     return switch (tile) {
-      Tile.hidden => const Color(0xFF222222),
-      Tile.wall => const Color(0xFF555555),
+      Tile.hidden => const Color(0xFFBBBBBB),
+      Tile.wall => const Color(0xFF333333),
       Tile.key => const Color(0xFFFFD700),
       Tile.door => const Color(0xFF7C4DFF),
-      Tile.treasure => const Color(0xFFFF4444),
+      Tile.treasure => const Color(0xFFFF1744),
       Tile.openDoor => const Color(0xFF7C4DFF),
-      _ => const Color(0xFFCCCCCC),
+      _ => const Color(0xFFDDDDDD),
     };
   }
 
@@ -218,33 +217,18 @@ class _DPad extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Up
-          _DPadButton(
-            icon: Icons.arrow_upward,
-            onTap: () => onMove('up'),
-          ),
+          _DPadButton(icon: Icons.arrow_upward, onTap: () => onMove('up')),
           const SizedBox(height: 4),
-          // Left, Center, Right
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _DPadButton(
-                icon: Icons.arrow_back,
-                onTap: () => onMove('left'),
-              ),
+              _DPadButton(icon: Icons.arrow_back, onTap: () => onMove('left')),
               const SizedBox(width: 52, height: 52),
-              _DPadButton(
-                icon: Icons.arrow_forward,
-                onTap: () => onMove('right'),
-              ),
+              _DPadButton(icon: Icons.arrow_forward, onTap: () => onMove('right')),
             ],
           ),
           const SizedBox(height: 4),
-          // Down
-          _DPadButton(
-            icon: Icons.arrow_downward,
-            onTap: () => onMove('down'),
-          ),
+          _DPadButton(icon: Icons.arrow_downward, onTap: () => onMove('down')),
         ],
       ),
     );
@@ -264,11 +248,10 @@ class _DPadButton extends StatelessWidget {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFF2A2A4A),
+          color: const Color(0xFF7C4DFF),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF4FC3F7), width: 2),
         ),
-        child: Icon(icon, color: const Color(0xFF4FC3F7), size: 28),
+        child: Icon(icon, color: Colors.white, size: 28),
       ),
     );
   }

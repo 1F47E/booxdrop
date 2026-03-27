@@ -11,7 +11,7 @@ class ResultScreen extends StatelessWidget {
     final won = game.iWon;
 
     return Scaffold(
-      backgroundColor: won ? const Color(0xFF0A1A0A) : const Color(0xFF1A0A0A),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -32,7 +32,7 @@ class ResultScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
-                    color: won ? const Color(0xFF4CAF50) : const Color(0xFFFF4444),
+                    color: won ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -40,60 +40,51 @@ class ResultScreen extends StatelessWidget {
                 // Winner name
                 Text(
                   '${game.winnerName ?? "?"} found the treasure!',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFFAAAAAA),
-                  ),
+                  style: const TextStyle(fontSize: 18, color: Color(0xFF555555)),
                 ),
                 const SizedBox(height: 8),
 
                 // Move count
                 Text(
                   '${game.moveCount} moves',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF888888),
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Color(0xFF888888)),
                 ),
                 const SizedBox(height: 40),
 
-                // Rematch button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: game.rematch,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C4DFF),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                // Rematch button — flat
+                GestureDetector(
+                  onTap: game.rematch,
+                  child: Container(
+                    width: double.infinity,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C4DFF),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    alignment: Alignment.center,
                     child: const Text(
                       'Rematch',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 // Leave button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton(
-                    onPressed: game.leave,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF888888),
-                      side: const BorderSide(color: Color(0xFF444444)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                GestureDetector(
+                  onTap: game.leave,
+                  child: Container(
+                    width: double.infinity,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF999999), width: 2),
                     ),
+                    alignment: Alignment.center,
                     child: const Text(
                       'Leave',
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: 16, color: Color(0xFF555555)),
                     ),
                   ),
                 ),

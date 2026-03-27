@@ -124,24 +124,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: const Text('Cancel'),
                   ),
                 ] else ...[
-                  // PLAY button (auto-match)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: () => game.autoMatch(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7C4DFF),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                  // PLAY button (auto-match) — flat, no gradient
+                  GestureDetector(
+                    onTap: () => game.autoMatch(),
+                    child: Container(
+                      width: double.infinity,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7C4DFF),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Play',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
                         ),
                       ),
-                      child: const Text('Play'),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -211,21 +212,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        SizedBox(
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              final code = _codeController.text.trim();
-                              if (code.length == 3) game.joinRace(code);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF9800),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                        GestureDetector(
+                          onTap: () {
+                            final code = _codeController.text.trim();
+                            if (code.length == 3) game.joinRace(code);
+                          },
+                          child: Container(
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF9800),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Text('Join', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            alignment: Alignment.center,
+                            child: const Text('Join', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                           ),
                         ),
                       ],
