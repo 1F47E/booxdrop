@@ -18,3 +18,7 @@ booxchat/*.iml
 booxchat/.idea/
 plans/
 .superpowers/
+
+# Separate repos (have their own GitHub remotes)
+booxchat-server/
+booxchat_p2p/
