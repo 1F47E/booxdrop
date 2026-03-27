@@ -32,7 +32,7 @@ class OtaMenuFooter extends StatelessWidget {
                   state.error!,
                   style: const TextStyle(
                     color: Colors.black54,
-                    fontSize: 14,
+                    fontSize: 17,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -51,8 +51,8 @@ class OtaMenuFooter extends StatelessWidget {
                   return Text(
                     v != null ? 'v${v.version} (${v.buildNumber})' : '',
                     style: const TextStyle(
-                      color: Colors.black38,
-                      fontSize: 14,
+                      color: Colors.black,
+                      fontSize: 20,
                     ),
                   );
                 },
@@ -80,7 +80,7 @@ class OtaMenuFooter extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: SizedBox(
-            height: 40,
+            height: 44,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.black,
@@ -90,7 +90,7 @@ class OtaMenuFooter extends StatelessWidget {
                 ),
               ),
               onPressed: controller.startOrResumeUpdate,
-              child: Text(label, style: const TextStyle(fontSize: 15)),
+              child: Text(label, style: const TextStyle(fontSize: 18)),
             ),
           ),
         );
@@ -99,7 +99,7 @@ class OtaMenuFooter extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: SizedBox(
-            height: 40,
+            height: 44,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -117,7 +117,7 @@ class OtaMenuFooter extends StatelessWidget {
                   state.progress >= 0
                       ? 'Downloading ${(state.progress * 100).toInt()}%'
                       : 'Downloading…',
-                  style: const TextStyle(color: Colors.black54, fontSize: 14),
+                  style: const TextStyle(color: Colors.black54, fontSize: 17),
                 ),
               ],
             ),
@@ -135,11 +135,11 @@ class OtaMenuFooter extends StatelessWidget {
             children: [
               const Text(
                 'Allow installing apps to continue',
-                style: TextStyle(color: Colors.black54, fontSize: 14),
+                style: TextStyle(color: Colors.black54, fontSize: 17),
               ),
               const SizedBox(height: 6),
               SizedBox(
-                height: 40,
+                height: 44,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.black,
@@ -149,7 +149,7 @@ class OtaMenuFooter extends StatelessWidget {
                     ),
                   ),
                   onPressed: controller.startOrResumeUpdate,
-                  child: Text(label, style: const TextStyle(fontSize: 15)),
+                  child: Text(label, style: const TextStyle(fontSize: 18)),
                 ),
               ),
             ],
@@ -161,7 +161,7 @@ class OtaMenuFooter extends StatelessWidget {
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
             'Opening installer…',
-            style: TextStyle(color: Colors.black54, fontSize: 14),
+            style: TextStyle(color: Colors.black54, fontSize: 17),
           ),
         );
     }

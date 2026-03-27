@@ -112,9 +112,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final bgColor = Color(settings.chatBgColorValue);
+    final b = settings.chatBgBrightness;
+    final adjustedBg = Color.fromARGB(
+      (bgColor.a * 255).round().clamp(0, 255),
+      (bgColor.r * 255 * b).round().clamp(0, 255),
+      (bgColor.g * 255 * b).round().clamp(0, 255),
+      (bgColor.b * 255 * b).round().clamp(0, 255),
+    );
+
     return Consumer<ChatProvider>(
       builder: (context, provider, _) {
         return Scaffold(
+          backgroundColor: adjustedBg,
           appBar: AppBar(
             leading: Builder(
               builder: (ctx) => IconButton(

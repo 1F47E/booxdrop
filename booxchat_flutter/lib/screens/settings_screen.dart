@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/eink_service.dart';
+import '../widgets/bg_color_picker.dart';
 import '../services/tts_service.dart';
 import '../config/app_version.dart';
 import 'changelog_screen.dart';
@@ -20,6 +21,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Draft state
   String _chatModel = 'gpt-5.4-mini';
   String _reasoning = 'low';
+  int _chatBgColor = 0xFFFFFFFF;
+  double _chatBgBrightness = 1.0;
   bool _kidsMode = false;
   int _kidsAge = 7;
   double _fontSize = 17;
@@ -58,6 +61,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final s = context.read<SettingsProvider>();
     _chatModel = s.chatModel;
     _reasoning = s.reasoning;
+    _chatBgColor = s.chatBgColorValue;
+    _chatBgBrightness = s.chatBgBrightness;
     _kidsMode = s.kidsMode;
     _kidsAge = s.kidsAge;
     _fontSize = s.rawFontSize;
@@ -219,6 +224,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           setState(() => _reasoning = v);
                           _markDirty();
                         }
+                      },
+                    ),
+                  ),
+
+                  // --- Chat Background ---
+                  const Divider(height: 1, color: Colors.black26),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Text('Chat Background',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: BgColorPicker(
+                      selectedColor: _chatBgColor,
+                      brightness: _chatBgBrightness,
+                      onColorChanged: (v) {
+                        setState(() => _chatBgColor = v);
+                        context.read<SettingsProvider>().setChatBgColor(v);
+                      },
+                      onBrightnessChanged: (v) {
+                        setState(() => _chatBgBrightness = v);
+                        context.read<SettingsProvider>().setChatBgBrightness(v);
                       },
                     ),
                   ),

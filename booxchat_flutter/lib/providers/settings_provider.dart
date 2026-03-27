@@ -69,9 +69,33 @@ class SettingsProvider extends ChangeNotifier {
   static const _kTtsProvider = 'settings_tts_provider';
   static const _kTtsVoice = 'settings_tts_voice';
   static const _kReasoning = 'settings_reasoning';
+  static const _kChatBgColor = 'settings_chat_bg_color';
+  static const _kChatBgBrightness = 'settings_chat_bg_brightness';
+
+  // 16 preset colors (hue values)
+  static const presetColors = <int>[
+    0xFFFFFFFF, // white
+    0xFFF5F5F5, // light gray
+    0xFFE8F5E9, // mint
+    0xFFE3F2FD, // light blue
+    0xFFFFF3E0, // peach
+    0xFFFCE4EC, // pink
+    0xFFF3E5F5, // lavender
+    0xFFFFFDE7, // cream
+    0xFFE0F7FA, // cyan
+    0xFFFFF8E1, // warm yellow
+    0xFFEFEBE9, // beige
+    0xFFE8EAF6, // indigo tint
+    0xFFE0F2F1, // teal tint
+    0xFFFBE9E7, // salmon
+    0xFFF1F8E9, // lime tint
+    0xFFEDE7F6, // purple tint
+  ];
 
   String _chatModel = 'gpt-5.4-mini';
   String _reasoning = 'low';
+  int _chatBgColor = 0xFFFFFFFF;
+  double _chatBgBrightness = 1.0;
   bool _kidsMode = true;
   int _kidsAge = 7;
   double _fontSize = 23;
@@ -83,6 +107,8 @@ class SettingsProvider extends ChangeNotifier {
 
   String get chatModel => _chatModel;
   String get reasoning => _reasoning;
+  int get chatBgColorValue => _chatBgColor;
+  double get chatBgBrightness => _chatBgBrightness;
   bool get kidsMode => _kidsMode;
   int get kidsAge => _kidsAge;
   double get fontSize => _kidsMode ? (_fontSize + 5) : _fontSize;
@@ -116,6 +142,8 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _chatModel = prefs.getString(_kChatModel) ?? 'gpt-5.4-mini';
     _reasoning = prefs.getString(_kReasoning) ?? 'low';
+    _chatBgColor = prefs.getInt(_kChatBgColor) ?? 0xFFFFFFFF;
+    _chatBgBrightness = prefs.getDouble(_kChatBgBrightness) ?? 1.0;
     _kidsMode = prefs.getBool(_kKidsMode) ?? true;
     _kidsAge = prefs.getInt(_kKidsAge) ?? 7;
     _fontSize = prefs.getDouble(_kFontSize) ?? 23;
@@ -140,6 +168,20 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kReasoning, value);
+  }
+
+  Future<void> setChatBgColor(int value) async {
+    _chatBgColor = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kChatBgColor, value);
+  }
+
+  Future<void> setChatBgBrightness(double value) async {
+    _chatBgBrightness = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_kChatBgBrightness, value);
   }
 
   Future<void> setKidsMode(bool value) async {
