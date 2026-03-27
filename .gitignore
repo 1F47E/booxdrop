@@ -17,3 +17,4 @@ booxchat/build/
 booxchat/*.iml
 booxchat/.idea/
 plans/
+.superpowers/

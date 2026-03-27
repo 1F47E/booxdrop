@@ -1,0 +1,8 @@
+services:
+  app:
+    image: registry.digitalocean.com/kass/maze-server:latest
+    network_mode: host
+    restart: always
+    environment:
+      - PORT=8085
+      - DEBUG=1

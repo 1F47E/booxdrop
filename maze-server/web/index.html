@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Race</title>
+<link rel="icon" type="image/png" href="/debug/favicon.png">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0a1a; color: #fff; overflow: hidden; height: 100vh;
+}
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px; background: #111133; border-bottom: 2px solid #333;
+  height: 48px; font-size: 13px;
+}
+.topbar .title { font-weight: bold; font-size: 16px; color: #ffd700; }
+.topbar .controls { display: flex; gap: 8px; align-items: center; }
+.topbar button {
+  padding: 4px 12px; border: 1px solid #555; border-radius: 4px;
+  background: #222; color: #fff; cursor: pointer; font-size: 12px;
+}
+.topbar button:hover { background: #444; }
+.topbar .active-player { color: #4fc3f7; font-weight: bold; }
+.topbar .status { color: #aaa; }
+
+/* Split panes */
+.split {
+  display: flex; height: calc(100vh - 48px);
+}
+.pane {
+  flex: 1; display: flex; flex-direction: column;
+  border-right: 2px solid #333; position: relative;
+  overflow: hidden;
+}
+.pane:last-child { border-right: none; }
+.pane.active { box-shadow: inset 0 0 0 3px #4fc3f7; }
+
+/* Pane header */
+.pane-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: #1a1a2e; font-size: 13px;
+  min-height: 40px;
+}
+.pane-header .player-name { font-weight: bold; font-size: 15px; }
+.pane-header .phase { color: #aaa; }
+.pane-header .inventory { display: flex; gap: 6px; align-items: center; }
+.pane-header .key-badge {
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;
+}
+.pane-header .key-badge.has-key { background: #ffd700; color: #000; }
+.pane-header .key-badge.no-key { background: #333; color: #666; }
+
+/* Grid */
+.grid-container {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 12px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  width: min(100%, 420px);
+  aspect-ratio: 1;
+}
+
+/* Cells */
+.cell {
+  aspect-ratio: 1; border-radius: 4px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; position: relative;
+  transition: background 0.1s;
+  user-select: none;
+}
+
+/* Builder cells */
+.cell.floor { background: #e8e8f0; }
+.cell.wall { background: #2c2c3a; border: 2px solid #444; }
+.cell.key { background: #fff8dc; border: 2px solid #ffd700; }
+.cell.door { background: #e0d4ff; border: 2px solid #7c4dff; }
+.cell.treasure { background: #ffe0e0; border: 2px solid #ff4444; }
+.cell.start { background: #c8ffc8; border: 2px solid #4caf50; }
+
+/* Race cells (fog) */
+.cell.hidden { background: #1a1a2e; border: 1px solid #222; }
+.cell.revealed-floor { background: #e8e8f0; }
+.cell.revealed-wall { background: #2c2c3a; border: 2px solid #555; }
+.cell.revealed-key { background: #fff8dc; border: 2px solid #ffd700; }
+.cell.revealed-door { background: #e0d4ff; border: 2px solid #7c4dff; }
+.cell.revealed-treasure { background: #ffe0e0; border: 2px solid #ff4444; }
+.cell.revealed-open-door { background: #f0e6ff; border: 2px dashed #7c4dff; }
+
+.cell.player {
+  box-shadow: inset 0 0 0 3px #4caf50;
+}
+.cell.cursor-cell {
+  box-shadow: inset 0 0 0 2px #4fc3f7;
+}
+
+/* Emojis */
+.cell-icon { font-size: 22px; line-height: 1; }
+
+/* Toolbar */
+.toolbar {
+  display: flex; gap: 4px; padding: 8px 12px;
+  background: #111; border-top: 1px solid #333;
+  flex-wrap: wrap; align-items: center;
+}
+.tool-btn {
+  padding: 6px 12px; border: 2px solid #444; border-radius: 6px;
+  background: #1a1a2e; color: #fff; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; gap: 4px;
+}
+.tool-btn:hover { border-color: #666; }
+.tool-btn.active { border-color: #4fc3f7; background: #1a2a3e; }
+.tool-btn .shortcut { font-size: 10px; color: #666; }
+.done-btn {
+  padding: 6px 16px; border: 2px solid #4caf50; border-radius: 6px;
+  background: #1a3a1e; color: #4caf50; cursor: pointer; font-size: 14px;
+  font-weight: bold; margin-left: auto;
+}
+.done-btn:hover { background: #2a4a2e; }
+.done-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.done-btn.is-done { background: #4caf50; color: #fff; border-color: #4caf50; }
+
+/* Status banner */
+.banner {
+  padding: 8px 12px; text-align: center; font-size: 13px; font-weight: bold;
+}
+.banner.info { background: #1a2a3e; color: #4fc3f7; }
+.banner.success { background: #1a3a1e; color: #4caf50; }
+.banner.warning { background: #3a3a1e; color: #ffd700; }
+.banner.error { background: #3a1a1e; color: #ff4444; }
+
+/* Event log */
+.event-log {
+  padding: 4px 12px; font-size: 11px; color: #888;
+  max-height: 60px; overflow-y: auto; background: #0d0d1a;
+}
+.event-log div { padding: 1px 0; }
+
+/* Overlay */
+.overlay {
+  position: absolute; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.8); z-index: 10;
+}
+.overlay-content {
+  text-align: center; padding: 24px;
+}
+
+/* Countdown */
+.countdown {
+  font-size: 64px; font-weight: bold; color: #ffd700;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* Help panel */
+.help {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #111133; padding: 6px 16px; font-size: 11px;
+  color: #666; display: flex; gap: 16px; flex-wrap: wrap;
+  border-top: 1px solid #333;
+}
+.help kbd {
+  padding: 1px 4px; border: 1px solid #444; border-radius: 2px;
+  background: #222; color: #aaa; font-size: 10px;
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="title">Maze Race</span>
+  <div class="controls">
+    <span class="active-player" id="activeLabel">Player A</span>
+    <button onclick="switchPlayer()" title="Tab">Switch</button>
+    <button onclick="resetGame()" title="R">Reset</button>
+    <button onclick="loadFixtures()" title="F">Fixtures</button>
+    <span class="status" id="connStatus">Disconnected</span>
+    <button onclick="connectWS()">Connect</button>
+  </div>
+</div>
+
+<div class="split">
+  <!-- Player A -->
+  <div class="pane" id="paneA">
+    <div class="pane-header">
+      <span class="player-name" id="nameA">Player A</span>
+      <span class="phase" id="phaseA">lobby</span>
+      <div class="inventory">
+        <span class="key-badge no-key" id="keyA">No Key</span>
+        <span id="movesA" style="font-size:11px;color:#666">Moves: 0</span>
+      </div>
+    </div>
+    <div id="bannerA"></div>
+    <div class="grid-container">
+      <div class="grid" id="gridA"></div>
+    </div>
+    <div class="toolbar" id="toolbarA"></div>
+    <div class="event-log" id="logA"></div>
+    <div class="overlay" id="overlayA"><div class="overlay-content"><div class="countdown" id="countdownA"></div></div></div>
+  </div>
+
+  <!-- Player B -->
+  <div class="pane" id="paneB">
+    <div class="pane-header">
+      <span class="player-name" id="nameB">Player B</span>
+      <span class="phase" id="phaseB">lobby</span>
+      <div class="inventory">
+        <span class="key-badge no-key" id="keyB">No Key</span>
+        <span id="movesB" style="font-size:11px;color:#666">Moves: 0</span>
+      </div>
+    </div>
+    <div id="bannerB"></div>
+    <div class="grid-container">
+      <div class="grid" id="gridB"></div>
+    </div>
+    <div class="toolbar" id="toolbarB"></div>
+    <div class="event-log" id="logB"></div>
+    <div class="overlay" id="overlayB"><div class="overlay-content"><div class="countdown" id="countdownB"></div></div></div>
+  </div>
+</div>
+
+<div class="help">
+  <span><kbd>Tab</kbd> switch player</span>
+  <span><kbd>1-5</kbd> builder tools</span>
+  <span><kbd>Arrows</kbd> move cursor / race move</span>
+  <span><kbd>Space</kbd> place tile</span>
+  <span><kbd>Enter</kbd> toggle done</span>
+  <span><kbd>C</kbd> create session</span>
+  <span><kbd>J</kbd> join session</span>
+  <span><kbd>R</kbd> reset</span>
+  <span><kbd>F</kbd> load fixtures</span>
+  <span><kbd>WASD</kbd> Player A race</span>
+  <span><kbd>IJKL</kbd> Player B race</span>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const W = 7, H = 7;
+const TILE = { FLOOR:0, WALL:1, KEY:2, DOOR:3, TREASURE:4, HIDDEN:-1, OPEN_DOOR:5 };
+const TILE_EMOJI = { 0:'', 1:'', 2:'\u{1F511}', 3:'\u{1F6AA}', 4:'\u{1F48E}', 5:'\u{1F6AA}' };
+const TOOL_NAMES = ['Floor','Wall','Key','Door','Treasure'];
+const TOOL_EMOJIS = ['\u2B1C','\u2B1B','\u{1F511}','\u{1F6AA}','\u{1F48E}'];
+
+function emptyGrid() {
+  return Array.from({length:H}, ()=>Array(W).fill(0));
+}
+function hiddenGrid() {
+  return Array.from({length:H}, ()=>Array(W).fill(-1));
+}
+
+const state = {
+  activePlayer: 0,
+  ws: [null, null],
+  sessionId: [null, null],
+  joinCode: null,
+  phase: ['lobby','lobby'],
+  mazes: [emptyGrid(), emptyGrid()],
+  tool: [1, 1],
+  cursor: [{x:3,y:3}, {x:3,y:3}],
+  done: [false, false],
+  valid: [false, false],
+  raceGrid: [hiddenGrid(), hiddenGrid()],
+  pos: [{x:0,y:0}, {x:0,y:0}],
+  hasKey: [false, false],
+  moveCount: [0, 0],
+  winner: null,
+};
+
+// ============================================================
+// DOM HELPERS (safe - no innerHTML with untrusted data)
+// ============================================================
+function setText(el, text) {
+  if (typeof el === 'string') el = document.getElementById(el);
+  if (el) el.textContent = text;
+}
+
+function clearChildren(el) {
+  if (typeof el === 'string') el = document.getElementById(el);
+  while (el && el.firstChild) el.removeChild(el.firstChild);
+}
+
+function makeEl(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text) el.textContent = text;
+  return el;
+}
+
+// ============================================================
+// WEBSOCKET
+// ============================================================
+function getWSUrl() {
+  const loc = window.location;
+  const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+  return proto + '//' + loc.host + '/ws/maze';
+}
+
+function connectWS() {
+  for (let i = 0; i < 2; i++) {
+    if (state.ws[i]) state.ws[i].close();
+    const ws = new WebSocket(getWSUrl());
+    state.ws[i] = ws;
+    const idx = i;
+
+    ws.onopen = function() {
+      log(idx, 'Connected');
+      wsSend(idx, {
+        type: 'hello',
+        payload: {
+          device_id: 'debug_player_' + (idx === 0 ? 'A' : 'B') + '_' + Date.now(),
+          display_name: idx === 0 ? 'Player A' : 'Player B',
+          platform: 'web',
+          app_version: '1.0.0'
+        }
+      });
+      updateConnStatus();
+    };
+
+    ws.onmessage = function(evt) {
+      try {
+        var msg = JSON.parse(evt.data);
+        handleServerMsg(idx, msg);
+      } catch(e) { log(idx, 'Parse error'); }
+    };
+
+    ws.onclose = function() {
+      log(idx, 'Disconnected');
+      state.ws[idx] = null;
+      updateConnStatus();
+    };
+
+    ws.onerror = function() { log(idx, 'Connection error'); };
+  }
+}
+
+function wsSend(idx, msg) {
+  if (state.ws[idx] && state.ws[idx].readyState === WebSocket.OPEN) {
+    state.ws[idx].send(JSON.stringify(msg));
+  }
+}
+
+function updateConnStatus() {
+  var a = state.ws[0] && state.ws[0].readyState === WebSocket.OPEN;
+  var b = state.ws[1] && state.ws[1].readyState === WebSocket.OPEN;
+  var el = document.getElementById('connStatus');
+  setText(el, a && b ? 'Both connected' : a ? 'A connected' : b ? 'B connected' : 'Disconnected');
+  el.style.color = a && b ? '#4caf50' : '#ff9800';
+}
+
+// ============================================================
+// SERVER MESSAGE HANDLER
+// ============================================================
+function handleServerMsg(idx, msg) {
+  var p = msg.payload || {};
+
+  switch (msg.type) {
+    case 'session_created':
+      state.sessionId[idx] = msg.session_id;
+      state.joinCode = p.join_code;
+      log(idx, 'Session created: ' + p.join_code);
+      setBanner(idx, 'Code: ' + p.join_code, 'info');
+      break;
+
+    case 'peer_joined':
+      log(idx, 'Peer joined: ' + p.peer_name);
+      state.phase[idx] = 'build';
+      setBanner(idx, p.peer_name + ' joined! Build your maze', 'success');
+      renderToolbar(idx);
+      break;
+
+    case 'lobby_state':
+      state.sessionId[idx] = msg.session_id;
+      state.phase[idx] = 'build';
+      log(idx, 'Lobby: ' + p.host_name + ' vs ' + p.guest_name);
+      renderToolbar(idx);
+      break;
+
+    case 'maze_valid':
+      state.valid[idx] = true;
+      log(idx, 'Maze validated');
+      break;
+
+    case 'maze_invalid':
+      state.valid[idx] = false;
+      log(idx, 'Maze invalid: ' + p.error);
+      setBanner(idx, p.error, 'error');
+      break;
+
+    case 'peer_build_state':
+      log(idx, 'Peer is ' + p.state);
+      if (p.state === 'done') setBanner(idx, 'Opponent is done!', 'warning');
+      break;
+
+    case 'both_done':
+      state.phase[idx] = 'countdown';
+      log(idx, 'Both done! Starting countdown...');
+      startCountdown(idx, p.countdown_seconds || 3);
+      break;
+
+    case 'race_started':
+      state.phase[idx] = 'race';
+      state.pos[idx] = p.position;
+      state.hasKey[idx] = false;
+      state.moveCount[idx] = 0;
+      state.raceGrid[idx] = hiddenGrid();
+      if (p.revealed) {
+        for (var ri = 0; ri < p.revealed.length; ri++) {
+          var r = p.revealed[ri];
+          state.raceGrid[idx][r.y][r.x] = r.tile;
+        }
+      }
+      log(idx, 'Race started!');
+      setBanner(idx, 'GO! Find the treasure!', 'success');
+      renderAll();
+      break;
+
+    case 'move_result':
+      state.pos[idx] = p.position;
+      state.hasKey[idx] = p.has_key;
+      state.moveCount[idx] = (state.moveCount[idx] || 0) + 1;
+      if (p.revealed) {
+        for (var mi = 0; mi < p.revealed.length; mi++) {
+          var mr = p.revealed[mi];
+          state.raceGrid[idx][mr.y][mr.x] = mr.tile;
+        }
+      }
+      if (p.event === 'found_key') {
+        log(idx, 'Found the key!');
+        setBanner(idx, 'Found the key!', 'warning');
+      } else if (p.event === 'door_locked') {
+        log(idx, 'Door is locked! Need key');
+        setBanner(idx, 'Need key!', 'error');
+      } else if (p.event === 'door_opened') {
+        log(idx, 'Door opened!');
+        setBanner(idx, 'Door opened!', 'success');
+      } else if (p.event === 'hit_wall') {
+        log(idx, 'Hit a wall');
+      }
+      renderAll();
+      break;
+
+    case 'opponent_progress':
+      log(idx, p.player_name + ': ' + p.event);
+      if (p.event === 'found_key') setBanner(idx, p.player_name + ' found the key!', 'warning');
+      if (p.event === 'door_opened') setBanner(idx, p.player_name + ' opened the door!', 'warning');
+      break;
+
+    case 'game_over':
+      state.phase[idx] = 'game_over';
+      state.winner = p.winner_name;
+      var won = p.winner_name === (idx === 0 ? 'Player A' : 'Player B');
+      log(idx, won ? 'YOU WIN!' : p.winner_name + ' wins');
+      setBanner(idx, won ? 'YOU WIN!' : p.winner_name + ' wins!', won ? 'success' : 'error');
+      renderAll();
+      break;
+
+    case 'peer_left':
+      log(idx, 'Peer left');
+      setBanner(idx, 'Peer disconnected', 'error');
+      break;
+
+    case 'error':
+      log(idx, 'Error: ' + p.message);
+      setBanner(idx, p.message, 'error');
+      break;
+
+    case 'pong':
+      break;
+  }
+
+  updateHeaders();
+}
+
+// ============================================================
+// COUNTDOWN
+// ============================================================
+function startCountdown(idx, seconds) {
+  var suffix = idx === 0 ? 'A' : 'B';
+  var overlay = document.getElementById('overlay' + suffix);
+  var countEl = document.getElementById('countdown' + suffix);
+
+  var count = seconds;
+  setText(countEl, count);
+  overlay.style.display = 'flex';
+
+  var timer = setInterval(function() {
+    count--;
+    if (count > 0) {
+      setText(countEl, count);
+    } else {
+      clearInterval(timer);
+      overlay.style.display = 'none';
+    }
+  }, 1000);
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function renderAll() {
+  renderGrid(0);
+  renderGrid(1);
+  renderToolbar(0);
+  renderToolbar(1);
+  updateHeaders();
+  updateActivePane();
+}
+
+function renderGrid(idx) {
+  var grid = document.getElementById(idx === 0 ? 'gridA' : 'gridB');
+  clearChildren(grid);
+
+  var phase = state.phase[idx];
+  var isRace = phase === 'race' || phase === 'game_over';
+
+  for (var row = H - 1; row >= 0; row--) {
+    for (var col = 0; col < W; col++) {
+      var cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.x = col;
+      cell.dataset.y = row;
+
+      if (isRace) {
+        var tile = state.raceGrid[idx][row][col];
+        var isPlayer = state.pos[idx].x === col && state.pos[idx].y === row;
+
+        if (tile === -1) {
+          cell.classList.add('hidden');
+        } else {
+          var cls = ['revealed-floor','revealed-wall','revealed-key','revealed-door','revealed-treasure','revealed-open-door'];
+          cell.classList.add(cls[tile] || 'revealed-floor');
+          var emoji = TILE_EMOJI[tile];
+          if (emoji) {
+            var icon = makeEl('span', 'cell-icon', emoji);
+            cell.appendChild(icon);
+          }
+        }
+        if (isPlayer) {
+          cell.classList.add('player');
+          clearChildren(cell);
+          cell.appendChild(makeEl('span', 'cell-icon', '\u{1F3C3}'));
+        }
+      } else {
+        var btile = state.mazes[idx][row][col];
+        var isStart = col === 0 && row === 0;
+        var isCursor = state.cursor[idx].x === col && state.cursor[idx].y === row;
+
+        if (isStart) {
+          cell.classList.add('start');
+          cell.appendChild(makeEl('span', 'cell-icon', '\u{1F6A9}'));
+        } else {
+          var bcls = ['floor','wall','key','door','treasure'];
+          cell.classList.add(bcls[btile] || 'floor');
+          var bemoji = TILE_EMOJI[btile];
+          if (bemoji) {
+            cell.appendChild(makeEl('span', 'cell-icon', bemoji));
+          }
+        }
+        if (isCursor) cell.classList.add('cursor-cell');
+
+        (function(c, r, i) {
+          cell.onclick = function() {
+            if (c === 0 && r === 0) return;
+            placeTile(i, c, r);
+          };
+        })(col, row, idx);
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function renderToolbar(idx) {
+  var tb = document.getElementById(idx === 0 ? 'toolbarA' : 'toolbarB');
+  clearChildren(tb);
+  var phase = state.phase[idx];
+
+  if (phase !== 'build' && phase !== 'lobby') return;
+
+  for (var i = 0; i <= 4; i++) {
+    var btn = document.createElement('button');
+    btn.className = 'tool-btn' + (state.tool[idx] === i ? ' active' : '');
+    btn.appendChild(document.createTextNode(TOOL_EMOJIS[i] + ' ' + TOOL_NAMES[i] + ' '));
+    var shortcut = makeEl('span', 'shortcut', String(i + 1));
+    btn.appendChild(shortcut);
+    (function(toolIdx, playerIdx) {
+      btn.onclick = function() { state.tool[playerIdx] = toolIdx; renderToolbar(playerIdx); };
+    })(i, idx);
+    tb.appendChild(btn);
+  }
+
+  var done = document.createElement('button');
+  done.className = 'done-btn' + (state.done[idx] ? ' is-done' : '');
+  done.textContent = state.done[idx] ? 'Done \u2713' : 'Done';
+  (function(playerIdx) {
+    done.onclick = function() { toggleDone(playerIdx); };
+  })(idx);
+  tb.appendChild(done);
+}
+
+function updateHeaders() {
+  for (var i = 0; i < 2; i++) {
+    var suffix = i === 0 ? 'A' : 'B';
+    setText('phase' + suffix, state.phase[i]);
+
+    var keyBadge = document.getElementById('key' + suffix);
+    if (state.hasKey[i]) {
+      keyBadge.className = 'key-badge has-key';
+      setText(keyBadge, '\u{1F511} Key');
+    } else {
+      keyBadge.className = 'key-badge no-key';
+      setText(keyBadge, 'No Key');
+    }
+
+    setText('moves' + suffix, 'Moves: ' + state.moveCount[i]);
+  }
+}
+
+function updateActivePane() {
+  document.getElementById('paneA').classList.toggle('active', state.activePlayer === 0);
+  document.getElementById('paneB').classList.toggle('active', state.activePlayer === 1);
+  setText('activeLabel', state.activePlayer === 0 ? 'Player A' : 'Player B');
+}
+
+function setBanner(idx, text, type) {
+  var el = document.getElementById(idx === 0 ? 'bannerA' : 'bannerB');
+  clearChildren(el);
+  var banner = makeEl('div', 'banner ' + type, text);
+  el.appendChild(banner);
+  if (type === 'info' || type === 'warning') {
+    setTimeout(function() { clearChildren(el); }, 4000);
+  }
+}
+
+function log(idx, text) {
+  var el = document.getElementById(idx === 0 ? 'logA' : 'logB');
+  var div = document.createElement('div');
+  var time = new Date().toLocaleTimeString().slice(0, 8);
+  div.textContent = time + ' ' + text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  while (el.children.length > 50) el.removeChild(el.firstChild);
+}
+
+// ============================================================
+// GAME ACTIONS
+// ============================================================
+function placeTile(idx, x, y) {
+  if (x === 0 && y === 0) return;
+  var tile = state.tool[idx];
+
+  if (tile === 2 || tile === 3 || tile === 4) {
+    for (var r = 0; r < H; r++) {
+      for (var c = 0; c < W; c++) {
+        if (state.mazes[idx][r][c] === tile) {
+          state.mazes[idx][r][c] = 0;
+        }
+      }
+    }
+  }
+
+  state.mazes[idx][y][x] = tile;
+  if (state.done[idx]) state.done[idx] = false;
+
+  renderGrid(idx);
+  renderToolbar(idx);
+}
+
+function toggleDone(idx) {
+  if (!state.sessionId[idx]) {
+    log(idx, 'Not in a session');
+    return;
+  }
+
+  if (!state.done[idx]) {
+    wsSend(idx, {
+      type: 'submit_maze',
+      session_id: state.sessionId[idx],
+      payload: { width: W, height: H, cells: state.mazes[idx] }
+    });
+
+    setTimeout(function() {
+      state.done[idx] = true;
+      state.valid[idx] = true;
+      wsSend(idx, {
+        type: 'set_done',
+        session_id: state.sessionId[idx],
+        payload: { done: true }
+      });
+      renderToolbar(idx);
+    }, 300);
+  } else {
+    state.done[idx] = false;
+    wsSend(idx, {
+      type: 'set_done',
+      session_id: state.sessionId[idx],
+      payload: { done: false }
+    });
+    renderToolbar(idx);
+  }
+}
+
+function sendMove(idx, dir) {
+  if (state.phase[idx] !== 'race') return;
+  if (!state.sessionId[idx]) return;
+  wsSend(idx, {
+    type: 'move_attempt',
+    session_id: state.sessionId[idx],
+    payload: { direction: dir }
+  });
+}
+
+function createSession(idx) {
+  if (!state.ws[idx] || state.ws[idx].readyState !== WebSocket.OPEN) {
+    log(idx, 'Not connected');
+    return;
+  }
+  wsSend(idx, {
+    type: 'create_session',
+    payload: {
+      display_name: idx === 0 ? 'Player A' : 'Player B',
+      app_version: '1.0.0'
+    }
+  });
+}
+
+function joinSession(idx) {
+  if (!state.joinCode) {
+    log(idx, 'No session to join');
+    return;
+  }
+  wsSend(idx, {
+    type: 'join_session',
+    payload: {
+      join_code: state.joinCode,
+      display_name: idx === 0 ? 'Player A' : 'Player B',
+      app_version: '1.0.0'
+    }
+  });
+}
+
+function switchPlayer() {
+  state.activePlayer = state.activePlayer === 0 ? 1 : 0;
+  updateActivePane();
+}
+
+function resetGame() {
+  for (var i = 0; i < 2; i++) {
+    if (state.ws[i]) state.ws[i].close();
+    state.ws[i] = null;
+    state.sessionId[i] = null;
+    state.phase[i] = 'lobby';
+    state.mazes[i] = emptyGrid();
+    state.tool[i] = 1;
+    state.cursor[i] = {x:3,y:3};
+    state.done[i] = false;
+    state.valid[i] = false;
+    state.raceGrid[i] = hiddenGrid();
+    state.pos[i] = {x:0,y:0};
+    state.hasKey[i] = false;
+    state.moveCount[i] = 0;
+    clearChildren(i === 0 ? 'bannerA' : 'bannerB');
+    clearChildren(i === 0 ? 'logA' : 'logB');
+  }
+  state.joinCode = null;
+  state.winner = null;
+  state.activePlayer = 0;
+  updateConnStatus();
+  renderAll();
+}
+
+function loadFixtures() {
+  state.mazes[0] = [
+    [0,0,0,0,0,0,0],
+    [0,1,1,0,1,1,0],
+    [0,2,0,0,0,0,0],
+    [1,1,0,1,1,0,0],
+    [0,0,0,0,3,0,0],
+    [0,1,1,0,1,0,0],
+    [0,0,0,0,4,0,0],
+  ];
+
+  state.mazes[1] = [
+    [0,0,0,0,0,0,0],
+    [0,0,1,1,0,0,0],
+    [0,0,0,1,0,1,0],
+    [0,1,0,0,2,1,0],
+    [0,1,0,3,0,0,0],
+    [0,0,0,1,0,1,0],
+    [0,0,0,0,0,0,4],
+  ];
+
+  log(0, 'Fixture maze loaded');
+  log(1, 'Fixture maze loaded');
+  renderAll();
+}
+
+// ============================================================
+// KEYBOARD HANDLER
+// ============================================================
+document.addEventListener('keydown', function(e) {
+  var idx = state.activePlayer;
+  var phase = state.phase[idx];
+
+  switch (e.key) {
+    case 'Tab':
+      e.preventDefault();
+      switchPlayer();
+      return;
+
+    case 'r': case 'R':
+      if (!e.ctrlKey && !e.metaKey) { resetGame(); return; }
+      break;
+
+    case 'f': case 'F':
+      if (!e.ctrlKey && !e.metaKey) { loadFixtures(); return; }
+      break;
+
+    case 'c': case 'C':
+      if (!e.ctrlKey && !e.metaKey) { createSession(idx); return; }
+      break;
+
+    case 'Enter':
+      toggleDone(idx);
+      return;
+
+    case '1': state.tool[idx] = 1; renderToolbar(idx); return;
+    case '2': state.tool[idx] = 0; renderToolbar(idx); return;
+    case '3': state.tool[idx] = 2; renderToolbar(idx); return;
+    case '4': state.tool[idx] = 3; renderToolbar(idx); return;
+    case '5': state.tool[idx] = 4; renderToolbar(idx); return;
+
+    case 'ArrowUp':
+      e.preventDefault();
+      if (phase === 'race') sendMove(idx, 'up');
+      else moveCursor(idx, 0, 1);
+      return;
+    case 'ArrowDown':
+      e.preventDefault();
+      if (phase === 'race') sendMove(idx, 'down');
+      else moveCursor(idx, 0, -1);
+      return;
+    case 'ArrowLeft':
+      e.preventDefault();
+      if (phase === 'race') sendMove(idx, 'left');
+      else moveCursor(idx, -1, 0);
+      return;
+    case 'ArrowRight':
+      e.preventDefault();
+      if (phase === 'race') sendMove(idx, 'right');
+      else moveCursor(idx, 1, 0);
+      return;
+
+    case ' ':
+      e.preventDefault();
+      if (phase === 'build' || phase === 'lobby') {
+        placeTile(idx, state.cursor[idx].x, state.cursor[idx].y);
+      }
+      return;
+
+    // WASD for player A
+    case 'w': case 'W': sendMove(0, 'up'); return;
+    case 'a': case 'A': sendMove(0, 'left'); return;
+    case 'd': case 'D': sendMove(0, 'right'); return;
+
+    // IJKL for player B
+    case 'i': case 'I': sendMove(1, 'up'); return;
+    case 'k': case 'K': sendMove(1, 'down'); return;
+    case 'l': case 'L': sendMove(1, 'right'); return;
+  }
+
+  // Handle 's' separately (avoid conflict with Ctrl+S)
+  if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) {
+    sendMove(0, 'down'); return;
+  }
+  // Handle 'j' separately (avoid conflict with join)
+  if ((e.key === 'j' || e.key === 'J') && phase === 'race') {
+    sendMove(1, 'left'); return;
+  }
+  if ((e.key === 'j' || e.key === 'J') && !e.ctrlKey && !e.metaKey && phase !== 'race') {
+    joinSession(idx); return;
+  }
+});
+
+function moveCursor(idx, dx, dy) {
+  var c = state.cursor[idx];
+  state.cursor[idx] = {
+    x: Math.max(0, Math.min(W-1, c.x + dx)),
+    y: Math.max(0, Math.min(H-1, c.y + dy))
+  };
+  renderGrid(idx);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderAll();
+</script>
+</body>
+</html>
