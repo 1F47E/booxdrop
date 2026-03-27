@@ -289,6 +289,10 @@ class OpenAIService {
         'tools': tools,
         'temperature': 0.7,
       };
+      // reasoning_effort only works with non-mini models (mini + tools not supported)
+      if (!model.contains('mini') && settings.reasoning != 'low') {
+        body['reasoning_effort'] = settings.reasoning;
+      }
 
       _log.info('chat', 'Sending ${conversation.length} msgs to $model');
       final sw = Stopwatch()..start();

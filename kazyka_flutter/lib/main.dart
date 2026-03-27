@@ -17,7 +17,7 @@ void main() async {
   await identity.init();
   final otaController = OtaController(appId: 'kazyka');
   runApp(KazykaApp(identity: identity, otaController: otaController));
-  otaController.onAppStarted();
+  await otaController.onAppStarted();
 }
 
 class KazykaApp extends StatelessWidget {

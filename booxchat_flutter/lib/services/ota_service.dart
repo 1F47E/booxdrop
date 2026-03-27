@@ -140,27 +140,40 @@ class OtaService {
     if (await file.exists()) await file.delete();
 
     final request = http.Request('GET', Uri.parse(update.url));
-    final streamed = await request.send().timeout(const Duration(seconds: 120));
+    final streamed =
+        await request.send().timeout(const Duration(seconds: 30));
     final total = streamed.contentLength ?? -1;
     var received = 0;
 
     final sink = file.openWrite();
-    await for (final chunk in streamed.stream) {
-      sink.add(chunk);
-      received += chunk.length;
-      if (onProgress != null) {
-        onProgress(total > 0 ? received / total : -1);
+    try {
+      await for (final chunk in streamed.stream
+          .timeout(const Duration(seconds: 60))) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (onProgress != null) {
+          onProgress(total > 0 ? received / total : -1);
+        }
       }
+    } finally {
+      await sink.close();
     }
-    await sink.close();
     return file;
   }
 
-  /// Verify downloaded APK SHA-256 matches expected hash.
+  /// Verify downloaded APK SHA-256 matches expected hash (streaming).
   static Future<bool> verifyApk(File file, String expectedSha256) async {
-    final bytes = await file.readAsBytes();
-    final digest = sha256.convert(bytes);
-    return digest.toString() == expectedSha256.toLowerCase();
+    Digest? result;
+    final sink = sha256.startChunkedConversion(
+      ChunkedConversionSink<Digest>.withCallback(
+        (chunks) => result = chunks.single,
+      ),
+    );
+    await for (final chunk in file.openRead()) {
+      sink.add(chunk);
+    }
+    sink.close();
+    return result.toString() == expectedSha256.toLowerCase();
   }
 
   /// Check if the app can install unknown packages.

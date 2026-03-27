@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/ota_service.dart';
 
+const _sentinel = Object();
+
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
@@ -40,13 +42,13 @@ class OtaState {
     OtaPhase? phase,
     OtaUpdate? update,
     double? progress,
-    String? error,
+    Object? error = _sentinel,
   }) =>
       OtaState(
         phase: phase ?? this.phase,
         update: update ?? this.update,
         progress: progress ?? this.progress,
-        error: error,
+        error: identical(error, _sentinel) ? this.error : error as String?,
       );
 }
 
@@ -194,6 +196,10 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _downloadAndInstall(OtaUpdate update) async {
+    if (_state.phase == OtaPhase.downloading ||
+        _state.phase == OtaPhase.installing) {
+      return;
+    }
     final myOp = ++_opId;
     _setState(_state.copyWith(
       phase: OtaPhase.downloading,

@@ -32,7 +32,7 @@ class OtaMenuFooter extends StatelessWidget {
                   state.error!,
                   style: const TextStyle(
                     color: Colors.black54,
-                    fontSize: 13,
+                    fontSize: 14,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -52,7 +52,7 @@ class OtaMenuFooter extends StatelessWidget {
                     v != null ? 'v${v.version} (${v.buildNumber})' : '',
                     style: const TextStyle(
                       color: Colors.black38,
-                      fontSize: 13,
+                      fontSize: 14,
                     ),
                   );
                 },
@@ -117,7 +117,7 @@ class OtaMenuFooter extends StatelessWidget {
                   state.progress >= 0
                       ? 'Downloading ${(state.progress * 100).toInt()}%'
                       : 'Downloading…',
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  style: const TextStyle(color: Colors.black54, fontSize: 14),
                 ),
               ],
             ),
@@ -135,7 +135,7 @@ class OtaMenuFooter extends StatelessWidget {
             children: [
               const Text(
                 'Allow installing apps to continue',
-                style: TextStyle(color: Colors.black54, fontSize: 13),
+                style: TextStyle(color: Colors.black54, fontSize: 14),
               ),
               const SizedBox(height: 6),
               SizedBox(
@@ -161,7 +161,7 @@ class OtaMenuFooter extends StatelessWidget {
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
             'Opening installer…',
-            style: TextStyle(color: Colors.black54, fontSize: 13),
+            style: TextStyle(color: Colors.black54, fontSize: 14),
           ),
         );
     }

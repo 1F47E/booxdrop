@@ -18,7 +18,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   // Draft state
-  String _chatModel = 'gpt-4.1';
+  String _chatModel = 'gpt-5.4-mini';
+  String _reasoning = 'low';
   bool _kidsMode = false;
   int _kidsAge = 7;
   double _fontSize = 17;
@@ -56,6 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _syncFromProvider() {
     final s = context.read<SettingsProvider>();
     _chatModel = s.chatModel;
+    _reasoning = s.reasoning;
     _kidsMode = s.kidsMode;
     _kidsAge = s.kidsAge;
     _fontSize = s.rawFontSize;
@@ -93,6 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final s = context.read<SettingsProvider>();
     await s.saveAll(
       chatModel: _chatModel,
+      reasoning: _reasoning,
       kidsMode: _kidsMode,
       kidsAge: _kidsAge,
       fontSize: _fontSize,
@@ -186,6 +189,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onChanged: (v) {
                         if (v != null) {
                           setState(() => _chatModel = v);
+                          _markDirty();
+                        }
+                      },
+                    ),
+                  ),
+
+                  // --- Reasoning ---
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Text('Reasoning',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DropdownButton<String>(
+                      value: _reasoning,
+                      isExpanded: true,
+                      underline: Container(height: 1, color: Colors.black26),
+                      items: SettingsProvider.reasoningLevels.entries
+                          .map((e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value,
+                                    style: const TextStyle(fontSize: 15)),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _reasoning = v);
                           _markDirty();
                         }
                       },

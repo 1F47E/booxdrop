@@ -5,9 +5,13 @@ import '../services/tts_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const chatModelNames = {
-    'gpt-4.1': 'GPT-4.1',
-    'gpt-4.1-mini': 'GPT-4.1 Mini',
-    'gpt-4.1-nano': 'GPT-4.1 Nano',
+    'gpt-5.4-mini': 'GPT-5.4 Mini',
+    'gpt-5.4': 'GPT-5.4',
+  };
+  static const reasoningLevels = {
+    'low': 'Low',
+    'medium': 'Medium',
+    'high': 'High',
   };
   static const imageProviderNames = {
     'nano_banana': 'Nano Banana',
@@ -64,18 +68,21 @@ class SettingsProvider extends ChangeNotifier {
   static const _kGrokModel = 'settings_grok_model';
   static const _kTtsProvider = 'settings_tts_provider';
   static const _kTtsVoice = 'settings_tts_voice';
+  static const _kReasoning = 'settings_reasoning';
 
-  String _chatModel = 'gpt-4.1';
+  String _chatModel = 'gpt-5.4-mini';
+  String _reasoning = 'low';
   bool _kidsMode = true;
   int _kidsAge = 7;
   double _fontSize = 23;
   String _imageProvider = 'nano_banana';
   String _nanoBananaModel = 'gemini-3.1-flash-image-preview';
   String _grokModel = 'grok-imagine-image';
-  String _ttsProvider = 'openai';
+  String _ttsProvider = 'elevenlabs';
   String _ttsVoice = 'nova';
 
   String get chatModel => _chatModel;
+  String get reasoning => _reasoning;
   bool get kidsMode => _kidsMode;
   int get kidsAge => _kidsAge;
   double get fontSize => _kidsMode ? (_fontSize + 5) : _fontSize;
@@ -107,7 +114,8 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    _chatModel = prefs.getString(_kChatModel) ?? 'gpt-4.1';
+    _chatModel = prefs.getString(_kChatModel) ?? 'gpt-5.4-mini';
+    _reasoning = prefs.getString(_kReasoning) ?? 'low';
     _kidsMode = prefs.getBool(_kKidsMode) ?? true;
     _kidsAge = prefs.getInt(_kKidsAge) ?? 7;
     _fontSize = prefs.getDouble(_kFontSize) ?? 23;
@@ -115,7 +123,7 @@ class SettingsProvider extends ChangeNotifier {
     _nanoBananaModel = prefs.getString(_kNanoBananaModel) ??
         'gemini-3.1-flash-image-preview';
     _grokModel = prefs.getString(_kGrokModel) ?? 'grok-imagine-image';
-    _ttsProvider = prefs.getString(_kTtsProvider) ?? 'openai';
+    _ttsProvider = prefs.getString(_kTtsProvider) ?? 'elevenlabs';
     _ttsVoice = prefs.getString(_kTtsVoice) ?? 'nova';
     notifyListeners();
   }
@@ -125,6 +133,13 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kChatModel, model);
+  }
+
+  Future<void> setReasoning(String value) async {
+    _reasoning = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kReasoning, value);
   }
 
   Future<void> setKidsMode(bool value) async {
@@ -189,6 +204,7 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> saveAll({
     required String chatModel,
+    required String reasoning,
     required bool kidsMode,
     required int kidsAge,
     required double fontSize,
@@ -199,6 +215,7 @@ class SettingsProvider extends ChangeNotifier {
     required String ttsVoice,
   }) async {
     _chatModel = chatModel;
+    _reasoning = reasoning;
     _kidsMode = kidsMode;
     _kidsAge = kidsAge;
     _fontSize = fontSize;
@@ -211,6 +228,7 @@ class SettingsProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kChatModel, chatModel);
+    await prefs.setString(_kReasoning, reasoning);
     await prefs.setBool(_kKidsMode, kidsMode);
     await prefs.setInt(_kKidsAge, kidsAge);
     await prefs.setDouble(_kFontSize, fontSize);

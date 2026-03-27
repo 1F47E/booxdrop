@@ -7,7 +7,7 @@ import 'screens/builder_screen.dart';
 import 'screens/race_screen.dart';
 import 'screens/result_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final otaController = OtaController(appId: 'maze_race');
 
@@ -21,7 +21,7 @@ void main() {
     ),
   );
 
-  otaController.onAppStarted();
+  await otaController.onAppStarted();
 }
 
 class MazeRaceApp extends StatelessWidget {
