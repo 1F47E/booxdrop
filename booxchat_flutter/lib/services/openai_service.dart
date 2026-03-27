@@ -289,8 +289,8 @@ class OpenAIService {
         'tools': tools,
         'temperature': 0.7,
       };
-      // reasoning_effort only works with non-mini models (mini + tools not supported)
-      if (!model.contains('mini') && settings.reasoning != 'low') {
+      // reasoning_effort not supported with tools on mini models
+      if (!model.contains('mini')) {
         body['reasoning_effort'] = settings.reasoning;
       }
 
