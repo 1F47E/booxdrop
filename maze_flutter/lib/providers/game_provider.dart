@@ -162,9 +162,11 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> saveMaze(String name) async {
+  Future<bool> saveMaze() async {
     if (!_maze.isLocallyValid) return false;
-    await MazeStorage.save(name, _maze.toJson());
+    final existing = await MazeStorage.loadAll();
+    final autoName = 'Maze ${existing.length + 1}';
+    await MazeStorage.save(autoName, _maze.toJson());
     return true;
   }
 

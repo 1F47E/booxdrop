@@ -157,33 +157,43 @@ class OtaService {
 
     final sink = file.openWrite();
     try {
-      await for (final chunk in streamed.stream
-          .timeout(const Duration(seconds: 60))) {
+      // Total download timeout of 5 minutes
+      await streamed.stream
+          .timeout(const Duration(seconds: 60))
+          .forEach((chunk) {
         sink.add(chunk);
         received += chunk.length;
         if (onProgress != null) {
           onProgress(total > 0 ? received / total : -1);
         }
-      }
+      }).timeout(const Duration(minutes: 5));
     } finally {
       await sink.close();
     }
     return file;
   }
 
-  /// Verify downloaded APK SHA-256 matches expected hash (streaming).
+  /// Verify downloaded APK SHA-256 matches expected hash.
+  /// Runs in a separate isolate to avoid blocking the UI.
   static Future<bool> verifyApk(File file, String expectedSha256) async {
+    final hash = await compute(_computeSha256, file.path);
+    return hash == expectedSha256.toLowerCase();
+  }
+
+  /// Isolate-safe SHA-256 computation (no Flutter imports).
+  static String _computeSha256(String filePath) {
+    final file = File(filePath);
     Digest? result;
     final sink = sha256.startChunkedConversion(
       ChunkedConversionSink<Digest>.withCallback(
         (chunks) => result = chunks.single,
       ),
     );
-    await for (final chunk in file.openRead()) {
-      sink.add(chunk);
-    }
+    // Read synchronously in isolate — no async needed
+    final bytes = file.readAsBytesSync();
+    sink.add(bytes);
     sink.close();
-    return result.toString() == expectedSha256.toLowerCase();
+    return result.toString();
   }
 
   /// Check if the app can install unknown packages.

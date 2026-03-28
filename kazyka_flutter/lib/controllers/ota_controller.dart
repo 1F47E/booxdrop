@@ -89,7 +89,8 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
   /// Call every time the drawer/menu opens.
   void onMenuOpened() {
     if (_state.phase == OtaPhase.downloading ||
-        _state.phase == OtaPhase.installing) {
+        _state.phase == OtaPhase.installing ||
+        _state.phase == OtaPhase.verifying) {
       return;
     }
     if (_state.phase == OtaPhase.permissionRequired) {
@@ -107,8 +108,8 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed &&
         _state.phase == OtaPhase.permissionRequired) {
-      // User returned from settings — try to continue.
-      _continueAfterPermission();
+      // Delay to avoid firing installer before UI is ready on cold start
+      Future.delayed(const Duration(milliseconds: 500), _continueAfterPermission);
     }
   }
 
@@ -174,6 +175,7 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _checkAndDownload() async {
+    if (_state.phase == OtaPhase.checking || _state.phase == OtaPhase.downloading) return;
     final myOp = ++_opId;
     _setState(_state.copyWith(phase: OtaPhase.checking, error: null));
 
@@ -244,8 +246,9 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
 
       _setState(_state.copyWith(phase: OtaPhase.installing));
       await OtaService.installApk(file);
-      // After handing off to installer, clean up.
       await _clearPendingUpdate();
+      // Reset after installer handoff so UI doesn't get stuck.
+      _setState(const OtaState(phase: OtaPhase.noUpdate));
     } catch (e) {
       if (myOp != _opId) return;
       _setState(_state.copyWith(
@@ -257,6 +260,9 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _continueAfterPermission() async {
+    // Guard against double invocation (lifecycle + UI tap)
+    if (_state.phase == OtaPhase.installing) return;
+
     final update = _state.update;
     if (update == null) {
       await _clearPendingUpdate();
@@ -271,6 +277,7 @@ class OtaController extends ChangeNotifier with WidgetsBindingObserver {
       _setState(_state.copyWith(phase: OtaPhase.installing));
       await OtaService.installApk(_downloadedApk!);
       await _clearPendingUpdate();
+      _setState(const OtaState(phase: OtaPhase.noUpdate));
     } else {
       // APK was lost — re-download.
       await _clearPendingUpdate();

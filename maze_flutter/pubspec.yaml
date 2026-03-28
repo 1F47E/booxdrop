@@ -1,7 +1,7 @@
 name: maze_race
 description: "Maze Race — kids build mazes and race to solve each other's!"
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.4+5
 
 environment:
   sdk: ^3.11.3

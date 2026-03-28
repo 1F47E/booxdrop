@@ -8,17 +8,36 @@ import '../controllers/ota_controller.dart';
 /// Pinned at the bottom of the burger-menu drawer.
 /// Shows current version, and — when an update is available — an update button
 /// or progress bar directly above it.
-class OtaMenuFooter extends StatelessWidget {
+class OtaMenuFooter extends StatefulWidget {
   const OtaMenuFooter({super.key, required this.controller});
 
   final OtaController controller;
 
   @override
+  State<OtaMenuFooter> createState() => _OtaMenuFooterState();
+}
+
+class _OtaMenuFooterState extends State<OtaMenuFooter> {
+  String _versionText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() => _versionText = 'v${info.version} (${info.buildNumber})');
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller,
+      listenable: widget.controller,
       builder: (context, _) {
-        final state = controller.state;
+        final state = widget.controller.state;
         return Container(
           decoration: const BoxDecoration(
             border: Border(top: BorderSide(color: Colors.black)),
@@ -33,7 +52,7 @@ class OtaMenuFooter extends StatelessWidget {
                 Text(
                   state.error!,
                   style: const TextStyle(
-                    color: Colors.black54,
+                    color: Color(0xFF444444),
                     fontSize: 17,
                   ),
                   maxLines: 1,
@@ -45,19 +64,13 @@ class OtaMenuFooter extends StatelessWidget {
               // Action area (button / progress / permission prompt)
               _buildAction(state),
 
-              // Version text — always visible
-              FutureBuilder<PackageInfo>(
-                future: PackageInfo.fromPlatform(),
-                builder: (context, snap) {
-                  final v = snap.data;
-                  return Text(
-                    v != null ? 'v${v.version} (${v.buildNumber})' : '',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                    ),
-                  );
-                },
+              // Version text — cached, no FutureBuilder flicker
+              Text(
+                _versionText,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 20,
+                ),
               ),
             ],
           ),
@@ -96,7 +109,7 @@ class OtaMenuFooter extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: controller.startOrResumeUpdate,
+              onPressed: widget.controller.startOrResumeUpdate,
               child: Text(label, style: const TextStyle(fontSize: 18)),
             ),
           ),
@@ -114,7 +127,7 @@ class OtaMenuFooter extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: state.progress >= 0 ? state.progress : null,
-                    backgroundColor: Colors.black12,
+                    backgroundColor: const Color(0xFFDDDDDD),
                     color: Colors.black,
                     minHeight: 6,
                   ),
@@ -123,8 +136,8 @@ class OtaMenuFooter extends StatelessWidget {
                 Text(
                   state.progress >= 0
                       ? 'Downloading ${(state.progress * 100).toInt()}%'
-                      : 'Downloading…',
-                  style: const TextStyle(color: Colors.black54, fontSize: 17),
+                      : 'Downloading\u2026',
+                  style: const TextStyle(color: Color(0xFF444444), fontSize: 17),
                 ),
               ],
             ),
@@ -148,7 +161,7 @@ class OtaMenuFooter extends StatelessWidget {
             children: [
               const Text(
                 'Allow installing apps to continue',
-                style: TextStyle(color: Colors.black54, fontSize: 17),
+                style: TextStyle(color: Color(0xFF444444), fontSize: 17),
               ),
               const SizedBox(height: 6),
               SizedBox(
@@ -161,7 +174,7 @@ class OtaMenuFooter extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: controller.startOrResumeUpdate,
+                  onPressed: widget.controller.startOrResumeUpdate,
                   child: Text(label, style: const TextStyle(fontSize: 18)),
                 ),
               ),
@@ -178,7 +191,7 @@ class OtaMenuFooter extends StatelessWidget {
   }
 }
 
-/// Displays "Text..." with cycling dots (1→2→3→1→…).
+/// Displays "Text..." with cycling dots (1->2->3->1->...).
 class _AnimatedDots extends StatefulWidget {
   const _AnimatedDots({required this.text});
   final String text;
@@ -209,7 +222,7 @@ class _AnimatedDotsState extends State<_AnimatedDots> {
   Widget build(BuildContext context) {
     return Text(
       '${widget.text}${'.' * _dots}',
-      style: const TextStyle(color: Colors.black54, fontSize: 17),
+      style: const TextStyle(color: Color(0xFF444444), fontSize: 17),
     );
   }
 }

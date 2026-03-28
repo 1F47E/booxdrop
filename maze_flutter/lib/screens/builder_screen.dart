@@ -55,9 +55,12 @@ class BuilderScreen extends StatelessWidget {
         children: [
           Column(
             children: [
-              // Banner
+              // Server banner takes priority
               if (game.banner != null)
-                _buildBanner(game.banner!, game.bannerType ?? 'info'),
+                _buildBanner(game.banner!, game.bannerType ?? 'info')
+              // Otherwise show local validation error
+              else if (game.maze.hasRequiredTiles && !game.maze.isSolvable)
+                _buildBanner(game.maze.validationError ?? 'Unsolvable maze', 'error'),
 
               // Grid
               Expanded(
@@ -198,57 +201,30 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final valid = game.maze.isLocallyValid;
     return GestureDetector(
-      onTap: game.maze.isLocallyValid ? () => _promptSave(context) : null,
+      onTap: valid ? () => _save(context) : null,
       child: Container(
         width: double.infinity,
-        height: 52,
+        height: 56,
         decoration: BoxDecoration(
-          color: game.maze.isLocallyValid ? const Color(0xFF7C4DFF) : Colors.grey.shade300,
+          color: valid ? const Color(0xFF7700CC) : const Color(0xFFBBBBBB),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
         child: const Text(
           'Save Maze',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
         ),
       ),
     );
   }
 
-  void _promptSave(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Name your maze'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'My Cool Maze'),
-          style: const TextStyle(fontSize: 18),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final name = controller.text.trim();
-              if (name.isEmpty) return;
-              final ok = await game.saveMaze(name);
-              if (!ctx.mounted) return;
-              Navigator.pop(ctx);
-              if (ok) {
-                game.exitWorkshop();
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+  void _save(BuildContext context) async {
+    final ok = await game.saveMaze();
+    if (ok) {
+      game.exitWorkshop();
+    }
   }
 }
 
