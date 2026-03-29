@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	bssession "github.com/1F47E/maze-server/internal/bs_session"
+	bsws "github.com/1F47E/maze-server/internal/bs_ws"
 	"github.com/1F47E/maze-server/internal/config"
 	"github.com/1F47E/maze-server/internal/match"
 	"github.com/1F47E/maze-server/internal/session"
@@ -27,7 +29,7 @@ func main() {
 	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).
 		With().Timestamp().Logger().Level(level)
 
-	// Session registry
+	// Maze session registry
 	registry := session.NewRegistry()
 	registry.StartCleanup()
 
@@ -35,8 +37,13 @@ func main() {
 	matchStore := match.NewStore("data/matches.jsonl", log)
 	log.Info().Int("matches", matchStore.Count()).Msg("match store ready")
 
-	// WebSocket handler
+	// Maze WebSocket handler
 	wsHandler := ws.NewHandler(registry, matchStore, log)
+
+	// Battleships session registry and handler
+	bsRegistry := bssession.NewRegistry()
+	bsRegistry.StartCleanup()
+	bsHandler := bsws.NewHandler(bsRegistry, log)
 
 	// Fiber app
 	app := fiber.New(fiber.Config{
@@ -48,12 +55,20 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
-	// Health check
+	// Health checks
 	app.Get("/api/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":  "ok",
 			"time":    time.Now().UTC().Format(time.RFC3339),
 			"matches": matchStore.Count(),
+		})
+	})
+
+	app.Get("/api/bs-health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status": "ok",
+			"game":   "battleships",
+			"time":   time.Now().UTC().Format(time.RFC3339),
 		})
 	})
 
@@ -92,6 +107,10 @@ func main() {
 
 	app.Get("/ws/maze", websocket.New(func(c *websocket.Conn) {
 		wsHandler.HandleConnection(c)
+	}))
+
+	app.Get("/ws/battleships", websocket.New(func(c *websocket.Conn) {
+		bsHandler.HandleConnection(c)
 	}))
 
 	// Static debug page (served from embedded or file)
