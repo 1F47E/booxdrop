@@ -30,7 +30,7 @@ class MazeRaceApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Maze Race',
+      title: 'Maze Game',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: false,

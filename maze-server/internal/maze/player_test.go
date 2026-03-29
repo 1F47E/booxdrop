@@ -5,7 +5,7 @@ import "testing"
 func TestNewPlayerState(t *testing.T) {
 	m := NewMaze(7, 7)
 	ps := NewPlayerState(m)
-	if ps.Position != StartPos() {
+	if ps.Position != m.StartPos() {
 		t.Errorf("expected start at (0,0), got (%d,%d)", ps.Position.X, ps.Position.Y)
 	}
 	if ps.HasKey {

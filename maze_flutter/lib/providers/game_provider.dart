@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/maze.dart';
 import '../services/game_service.dart';
 import '../services/maze_storage.dart';
+import '../services/sound_service.dart';
 
 enum GamePhase { home, lobby, build, countdown, race, gameOver, workshop }
 
@@ -369,8 +370,8 @@ class GameProvider extends ChangeNotifier {
         }
 
       case 'both_done':
-        _phase = GamePhase.countdown;
-        _startCountdown(payload['countdown_seconds'] as int? ?? 3);
+        _setBanner('Starting...', 'info');
+        // Server will send race_started after countdown — no local countdown needed
 
       case 'race_started':
         _phase = GamePhase.race;
@@ -403,9 +404,20 @@ class GameProvider extends ChangeNotifier {
         }
         final event = payload['event'] as String? ?? '';
         _lastEvent = event;
-        if (event == 'found_key') _setBanner('Found the key!', 'warning');
-        if (event == 'door_locked') _setBanner('Need key!', 'error');
-        if (event == 'door_opened') _setBanner('Door opened!', 'success');
+        if (event == 'found_key') {
+          _setBanner('Found the key!', 'warning');
+          SoundService.playKey();
+        } else if (event == 'door_locked') {
+          _setBanner('Need key!', 'error');
+          SoundService.playWall();
+        } else if (event == 'door_opened') {
+          _setBanner('Door opened!', 'success');
+          SoundService.playDoor();
+        } else if (event == 'hit_wall') {
+          SoundService.playWall();
+        } else if (event == '' || event == 'none') {
+          SoundService.playMove();
+        }
 
       case 'opponent_progress':
         final name = payload['player_name'] as String? ?? 'Opponent';
@@ -419,6 +431,7 @@ class GameProvider extends ChangeNotifier {
         _winnerName = payload['winner_name'] as String?;
         final winnerDeviceId = payload['winner_device_id'] as String?;
         _iWon = winnerDeviceId == _service.deviceId;
+        if (_iWon) SoundService.playWin();
 
       case 'peer_left':
         _setBanner('$_peerName left', 'error');
@@ -448,16 +461,6 @@ class GameProvider extends ChangeNotifier {
     }
   }
 
-  void _startCountdown(int seconds) {
-    _countdownValue = seconds;
-    notifyListeners();
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 1));
-      _countdownValue--;
-      notifyListeners();
-      return _countdownValue > 0;
-    });
-  }
 
   @override
   void dispose() {

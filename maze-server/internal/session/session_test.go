@@ -17,6 +17,7 @@ func validTestMaze() *maze.Maze {
 	m.Set(2, 5, maze.TileWall)
 	m.Set(3, 5, maze.TileWall)
 	m.Set(4, 5, maze.TileWall)
+	m.Set(0, 0, maze.TileStart)
 	m.Set(1, 2, maze.TileKey)
 	m.Set(4, 4, maze.TileDoor)
 	m.Set(6, 6, maze.TileTreasure)
@@ -190,7 +191,7 @@ func TestRaceMovement(t *testing.T) {
 	s.StartRace()
 
 	// Player A moves right
-	result, _, err := s.ProcessMove("A", "right")
+	result, _, _, err := s.ProcessMove("A", "right")
 	if err != nil {
 		t.Fatalf("move: %v", err)
 	}
@@ -208,7 +209,7 @@ func TestRaceNotInRacePhase(t *testing.T) {
 	s := r.CreateSession(&Player{DeviceID: "A"})
 	_, _ = r.JoinSession(s.JoinCode, &Player{DeviceID: "B"})
 
-	_, _, err := s.ProcessMove("A", "right")
+	_, _, _, err := s.ProcessMove("A", "right")
 	if err == nil {
 		t.Fatal("should error when not in race phase")
 	}
@@ -233,18 +234,19 @@ func TestRaceWin(t *testing.T) {
 	s.SetDone("B", true)
 	s.StartRace()
 
-	// Player B explores A's maze.
-	// Maze: key at (1,2), door at (4,4), treasure at (6,6)
-	// Path: (0,0)->R(1,0)->U(1,1)->U(1,2)=key->U(1,3)->R(2,3)->R(3,3)->R(4,3)->U(4,4)=door
-	//       ->U(4,5)->R(5,5)->U(5,6)->R(6,6)=treasure
+	// Player B explores A's maze, but host A has first turn.
+	// Alternate: A moves (dummy), then B moves.
 	directions := []string{
 		"right", "up", "up", // reach key at (1,2)
 		"up", "right", "right", "right", "up", // reach door at (4,4)
-		"right", "up", "right", "up", // (5,4)->(5,5)->(6,5)->(6,6)=treasure
+		"right", "up", "right", "up", // treasure
 	}
 
 	for i, dir := range directions {
-		result, _, err := s.ProcessMove("B", dir)
+		// A's turn — dummy move
+		s.ProcessMove("A", "right")
+		// B's turn
+		result, _, _, err := s.ProcessMove("B", dir)
 		if err != nil {
 			t.Fatalf("move %d (%s): %v", i, dir, err)
 		}

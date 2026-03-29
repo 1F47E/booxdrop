@@ -16,7 +16,7 @@ class RaceScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF7C4DFF),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Race!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text('Solve!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: game.leave,

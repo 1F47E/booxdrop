@@ -45,6 +45,21 @@ func (c *Client) Close() {
 	c.conn.Close()
 }
 
+// DeviceID returns the client's device ID.
+func (c *Client) DeviceID() string {
+	return c.deviceID
+}
+
+// SetDeviceID sets the client's device ID.
+func (c *Client) SetDeviceID(id string) {
+	c.deviceID = id
+}
+
+// NewClient creates a Client wrapping the given WebSocket connection.
+func NewClient(conn *websocket.Conn) *Client {
+	return &Client{conn: conn}
+}
+
 // NewHandler creates a new WebSocket handler.
 func NewHandler(registry *session.Registry, matchStore *match.Store, log zerolog.Logger) *Handler {
 	return &Handler{

@@ -36,6 +36,8 @@ func validTestMaze() *Maze {
 	m.Set(4, 4, TileDoor)
 	// Treasure at (6,6)
 	m.Set(6, 6, TileTreasure)
+	// Start at (0,0)
+	m.Set(0, 0, TileStart)
 	return m
 }
 
@@ -55,7 +57,9 @@ func TestTileEncoding(t *testing.T) {
 }
 
 func TestStartPos(t *testing.T) {
-	s := StartPos()
+	m := NewMaze(7, 7)
+	m.Set(0, 0, TileStart)
+	s := m.StartPos()
 	if s.X != 0 || s.Y != 0 {
 		t.Errorf("start should be (0,0), got (%d,%d)", s.X, s.Y)
 	}
@@ -175,7 +179,7 @@ func TestInvalidMaze_TooEasy(t *testing.T) {
 func TestShortestPath(t *testing.T) {
 	m := validTestMaze()
 	// Start (0,0) to key (1,2)
-	dist := m.shortestPath(StartPos(), Point{1, 2}, false)
+	dist := m.shortestPath(m.StartPos(), Point{1, 2}, false)
 	if dist < 0 {
 		t.Error("expected reachable path from start to key")
 	}

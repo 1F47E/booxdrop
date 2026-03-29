@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         title: const Text(
-          'Maze Race',
+          'Maze Game',
           style: TextStyle(
             fontWeight: FontWeight.w900,
             color: Color(0xFF7C4DFF),
@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // Tagline
                 const Text(
-                  'Build. Swap. Race!',
+                  'Build. Swap. Solve!',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF444444)),
                 ),
                 const SizedBox(height: 32),
@@ -521,7 +521,7 @@ class _MazeDrawerState extends State<_MazeDrawer> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Maze Race',
+                      'Maze Game',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
