@@ -22,3 +22,4 @@ plans/
 # Separate repos (have their own GitHub remotes)
 booxchat-server/
 booxchat_p2p/
+maze-server/maze-server-linux
