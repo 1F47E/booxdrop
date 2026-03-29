@@ -1,12 +1,12 @@
 ---
 name: release-flutter
-description: Build, version bump, changelog, and install Smarty Pants Flutter APK to connected Boox device
+description: Build, version bump, changelog, upload to OTA server, sign manifest. Supports all 4 Flutter apps.
 argument-hint: <app> [patch|minor|major]
 ---
 
 # Flutter App Release + OTA Publish
 
-Bump version, generate changelog from git commits, build APK, upload to OTA server, sign manifest, and optionally install to connected device.
+Bump version, build APK, upload to OTA server, sign manifest. No USB install — OTA is the delivery method.
 
 ## Usage
 
@@ -14,21 +14,21 @@ Parse `$ARGUMENTS`:
 
 | Arg | Values | Default | Notes |
 |-----|--------|---------|-------|
-| app name | `booxchat`, `kazyka`, `booxchat_p2p`, `maze_race` | **required** | Which app to release |
+| app name | `booxchat`, `kazyka`, `booxchat_p2p`, `maze_race`, or `all` | **required** | Which app to release. `all` releases all 4. |
 | bump type | `patch`, `minor`, `major` | `patch` | Which semver component to bump |
 
 **App directory mapping:**
 
-| appId | Directory | Tag prefix |
-|-------|-----------|------------|
-| `booxchat` | `booxchat_flutter/` | `booxchat-v` |
-| `kazyka` | `kazyka_flutter/` | `kazyka-v` |
-| `booxchat_p2p` | `booxchat_p2p/` | `booxchat_p2p-v` |
-| `maze_race` | `maze_flutter/` | `maze_race-v` |
+| appId | Directory | Tag prefix | Display name |
+|-------|-----------|------------|-------------|
+| `booxchat` | `booxchat_flutter/` | `booxchat-v` | Smarty Pants |
+| `kazyka` | `kazyka_flutter/` | `kazyka-v` | Kazyka |
+| `booxchat_p2p` | `booxchat_p2p/` | `booxchat_p2p-v` | Pixel Chat |
+| `maze_race` | `maze_flutter/` | `maze_race-v` | Maze Race |
 
 ## Environment
 
-Every flutter build/run/install command MUST be prefixed with:
+Every flutter build command MUST be prefixed with:
 
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
@@ -36,46 +36,25 @@ export PATH="$JAVA_HOME/bin:$PATH"
 export ANDROID_SDK_ROOT=/opt/homebrew/share/android-commandlinetools
 ```
 
-## Steps
+## Steps (repeat for each app if `all`)
 
 ### 1. Determine new version
 
-Read current version from `<APP_DIR>/pubspec.yaml` (the `version:` line, format `X.Y.Z+N`).
+Read current version from `<APP_DIR>/pubspec.yaml` (`version: X.Y.Z+N`).
 
-Bump according to the argument:
-- `patch`: `1.0.0` → `1.0.1`
-- `minor`: `1.0.0` → `1.1.0`
-- `major`: `1.0.0` → `2.0.0`
-
-Also increment the build number (`+N`) by 1.
+Bump semver component and increment build number by 1.
 
 ### 2. Generate changelog entry
-
-Get the last git tag matching `<TAG_PREFIX>*`:
 
 ```bash
 git tag -l '<TAG_PREFIX>*' --sort=-v:refname | head -1
 ```
 
-If no tag exists, use the first commit. Get commits since that tag:
-
-```bash
-git log $LAST_TAG..HEAD --oneline -- <APP_DIR>/
-```
-
-Prepend a new section to `<APP_DIR>/CHANGELOG.md` (create if it doesn't exist):
-
-```markdown
-## $NEW_VERSION ($DATE)
-
-- commit message 1
-- commit message 2
-...
-```
+If no tag, use all commits. Get commits since tag for `<APP_DIR>/`. Prepend section to `<APP_DIR>/CHANGELOG.md`.
 
 ### 3. Update pubspec.yaml
 
-Update the `version:` line in `<APP_DIR>/pubspec.yaml` to `$NEW_VERSION+$NEW_BUILD_NUMBER`.
+Update `version:` line to `$NEW_VERSION+$NEW_BUILD_NUMBER`.
 
 ### 4. Build APK
 
@@ -86,51 +65,39 @@ flutter build apk --debug \
   --dart-define=BUILD_DATE=$(date +%Y-%m-%d)
 ```
 
-NOTE: Use `--debug` (no signing key configured). The APK path will be:
-`<APP_DIR>/build/app/outputs/flutter-apk/app-debug.apk`
+APK: `<APP_DIR>/build/app/outputs/flutter-apk/app-debug.apk`
 
-Verify build succeeds.
-
-### 5. Compute SHA-256
+### 5. Compute SHA-256 + Upload APK
 
 ```bash
-shasum -a 256 <APP_DIR>/build/app/outputs/flutter-apk/app-debug.apk | awk '{print $1}'
-```
-
-### 6. Upload APK to OTA server
-
-Upload to a temp path first, then rename atomically:
-
-```bash
+cd /Users/kass/dev/BooxDrop
+SHA=$(shasum -a 256 <APP_DIR>/build/app/outputs/flutter-apk/app-debug.apk | awk '{print $1}')
 scp <APP_DIR>/build/app/outputs/flutter-apk/app-debug.apk feesh9:/var/www/ota/<APPID>-<BUILD_NUMBER>.apk.tmp
 ssh feesh9 "mv /var/www/ota/<APPID>-<BUILD_NUMBER>.apk.tmp /var/www/ota/<APPID>-<BUILD_NUMBER>.apk"
 ```
 
-### 7. Update manifest.json on server
+### 6. Update manifest.json on server using python3
 
-Read the current manifest, update the entry for this app:
-
-```bash
-ssh feesh9 "cat /var/www/ota/manifest.json"
-```
-
-Update the app's entry with:
-- `versionName`: the new version string
-- `versionCode`: the new build number
-- `url`: `https://ota.mos6581.cc/<APPID>-<BUILD_NUMBER>.apk`
-- `sha256`: the computed SHA-256 from step 5
-- `publishedAt`: current UTC timestamp in ISO 8601
-
-Write the updated manifest back:
+IMPORTANT: Use python3 to read-modify-write the JSON. Do NOT manually construct the full JSON.
 
 ```bash
-ssh feesh9 "cat > /var/www/ota/manifest.json.tmp << 'EOF'
-<UPDATED_JSON>
-EOF
-"
+ssh feesh9 "python3 -c \"
+import json, datetime
+with open('/var/www/ota/manifest.json') as f:
+    m = json.load(f)
+m['<APPID>'] = {
+    'versionName': '$NEW_VERSION',
+    'versionCode': $NEW_BUILD_NUMBER,
+    'url': 'https://ota.mos6581.cc/<APPID>-$NEW_BUILD_NUMBER.apk',
+    'sha256': '$SHA',
+    'publishedAt': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+}
+with open('/var/www/ota/manifest.json.tmp', 'w') as f:
+    json.dump(m, f, indent=2)
+\""
 ```
 
-### 8. Sign manifest and swap atomically
+### 7. Sign manifest and swap atomically
 
 ```bash
 ssh feesh9 "sudo openssl pkeyutl -sign -inkey /etc/ota/signing_key.pem -rawin \
@@ -140,31 +107,7 @@ ssh feesh9 "sudo openssl pkeyutl -sign -inkey /etc/ota/signing_key.pem -rawin \
   mv /var/www/ota/manifest.sig.tmp /var/www/ota/manifest.sig"
 ```
 
-### 9. Commit and tag
-
-```bash
-git add <APP_DIR>/pubspec.yaml <APP_DIR>/CHANGELOG.md
-git commit -m "Release <APP_NAME> v$NEW_VERSION"
-git tag <TAG_PREFIX>$NEW_VERSION
-```
-
-### 10. Install to device (optional)
-
-Check for connected device:
-
-```bash
-adb devices
-```
-
-If a device is connected:
-
-```bash
-flutter install -d <DEVICE_ID> --use-application-binary=<APP_DIR>/build/app/outputs/flutter-apk/app-debug.apk
-```
-
-If no device found, print the APK path for manual install.
-
-### 11. Verify OTA
+### 8. Verify OTA
 
 ```bash
 curl -s https://ota.mos6581.cc/manifest.json | python3 -m json.tool
@@ -172,10 +115,17 @@ curl -s https://ota.mos6581.cc/manifest.json | python3 -m json.tool
 
 Confirm the app entry has the correct versionCode, sha256, and URL.
 
+### 9. Report
+
+Print summary: app name, old version → new version, OTA URL.
+
+Do NOT commit or tag — user will commit when ready.
+
 ## Notes
 
 - Working directory: `/Users/kass/dev/BooxDrop`
-- Tags use app-specific prefixes to distinguish releases
 - Do NOT delete previous APKs from the server (rollback)
-- Requires: Flutter SDK, Android SDK, adb, JAVA_HOME and ANDROID_SDK_ROOT env vars
+- Do NOT commit or push — user controls git
+- Do NOT install via USB — OTA is the delivery method
 - OTA signing key: `/etc/ota/signing_key.pem` on feesh9
+- Requires: Flutter SDK, Android SDK, JAVA_HOME and ANDROID_SDK_ROOT env vars
