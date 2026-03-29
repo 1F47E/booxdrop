@@ -52,6 +52,8 @@ class GameProvider extends ChangeNotifier {
   String? get lastEvent => _lastEvent;
   String? _opponentEvent;
   String? get opponentEvent => _opponentEvent;
+  bool _myTurn = false;
+  bool get myTurn => _myTurn;
 
   // Result
   String? _winnerName;
@@ -163,7 +165,7 @@ class GameProvider extends ChangeNotifier {
   }
 
   Future<bool> saveMaze() async {
-    if (!_maze.isLocallyValid) return false;
+    if (!_maze.hasRequiredTiles) return false;
     final existing = await MazeStorage.loadAll();
     final autoName = 'Maze ${existing.length + 1}';
     await MazeStorage.save(autoName, _maze.toJson());
@@ -219,11 +221,13 @@ class GameProvider extends ChangeNotifier {
   }
 
   void placeTile(int x, int y) {
-    if (x == 0 && y == 0) return; // start
     final tile = _selectedTool;
 
-    // Enforce single special tiles
-    if (tile == Tile.key || tile == Tile.door || tile == Tile.treasure) {
+    // Don't erase the start tile (use start tool to move it)
+    if (tile == Tile.floor && _maze.get(x, y) == Tile.start) return;
+
+    // Enforce single special tiles (including start)
+    if (tile == Tile.key || tile == Tile.door || tile == Tile.treasure || tile == Tile.start) {
       for (int r = 0; r < Maze.height; r++) {
         for (int c = 0; c < Maze.width; c++) {
           if (_maze.get(c, r) == tile) _maze.set(c, r, Tile.floor);
@@ -266,6 +270,7 @@ class GameProvider extends ChangeNotifier {
 
   void move(String direction) {
     if (_phase != GamePhase.race || _sessionId == null) return;
+    if (!_myTurn) return;
     _service.sendMove(_sessionId!, direction);
   }
 
@@ -299,6 +304,7 @@ class GameProvider extends ChangeNotifier {
     _moveCount = 0;
     _lastEvent = null;
     _opponentEvent = null;
+    _myTurn = false;
     _winnerName = null;
     _iWon = false;
     _banner = null;
@@ -371,6 +377,7 @@ class GameProvider extends ChangeNotifier {
         _playerPos = Point.fromJson(payload['position'] as Map<String, dynamic>);
         _hasKey = false;
         _moveCount = 0;
+        _myTurn = (payload['active_turn'] as String?) == _deviceId;
         _raceGrid = List.generate(
           Maze.height,
           (_) => List.filled(Maze.width, Tile.hidden),
@@ -381,6 +388,9 @@ class GameProvider extends ChangeNotifier {
           _raceGrid[m['y'] as int][m['x'] as int] = m['tile'] as int;
         }
         _setBanner('GO! Find the treasure!', 'success');
+
+      case 'turn_changed':
+        _myTurn = (payload['active_device_id'] as String?) == _deviceId;
 
       case 'move_result':
         _playerPos = Point.fromJson(payload['position'] as Map<String, dynamic>);

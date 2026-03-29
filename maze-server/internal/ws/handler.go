@@ -424,25 +424,27 @@ func (h *Handler) handleSetDone(client *Client, msg Message) {
 }
 
 func (h *Handler) sendRaceStarted(s *session.Session) {
-	// Host explores guest's maze
+	// Host explores guest's maze — start at guest maze's start pos
 	hostRevealed := s.HostRaceState.GetAllRevealed()
 	h.sendToPlayer(s.Host, Message{
 		Type:      "race_started",
 		SessionID: s.ID,
 		Payload: mustJSON(map[string]any{
-			"position": maze.StartPos(),
-			"revealed": hostRevealed,
+			"position":    s.GuestMaze.StartPos(),
+			"revealed":    hostRevealed,
+			"active_turn": s.Host.DeviceID,
 		}),
 	})
 
-	// Guest explores host's maze
+	// Guest explores host's maze — start at host maze's start pos
 	guestRevealed := s.GuestRaceState.GetAllRevealed()
 	h.sendToPlayer(s.Guest, Message{
 		Type:      "race_started",
 		SessionID: s.ID,
 		Payload: mustJSON(map[string]any{
-			"position": maze.StartPos(),
-			"revealed": guestRevealed,
+			"position":    s.HostMaze.StartPos(),
+			"revealed":    guestRevealed,
+			"active_turn": s.Host.DeviceID,
 		}),
 	})
 }
@@ -465,7 +467,7 @@ func (h *Handler) handleMoveAttempt(client *Client, msg Message) {
 		return
 	}
 
-	result, opponentEvent, err := s.ProcessMove(client.deviceID, p.Direction)
+	result, opponentEvent, activeTurn, err := s.ProcessMove(client.deviceID, p.Direction)
 	if err != nil {
 		h.sendError(client, msg.SessionID, err.Error())
 		return
@@ -492,6 +494,17 @@ func (h *Handler) handleMoveAttempt(client *Client, msg Message) {
 				}),
 			})
 		}
+	}
+
+	// Broadcast turn change to both players (skip if game is over)
+	if !result.GameOver {
+		turnMsg := Message{
+			Type:      "turn_changed",
+			SessionID: s.ID,
+			Payload:   mustJSON(map[string]any{"active_device_id": activeTurn}),
+		}
+		h.sendToPlayer(s.Host, turnMsg)
+		h.sendToPlayer(s.Guest, turnMsg)
 	}
 
 	// Check game over

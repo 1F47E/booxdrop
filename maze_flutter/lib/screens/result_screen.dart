@@ -32,7 +32,7 @@ class ResultScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
-                    color: won ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
+                    color: won ? const Color(0xFF006600) : const Color(0xFFCC0000),
                   ),
                 ),
                 const SizedBox(height: 8),

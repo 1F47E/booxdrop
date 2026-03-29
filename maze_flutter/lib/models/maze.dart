@@ -26,6 +26,7 @@ class Tile {
   static const int treasure = 4;
   static const int hidden = -1;
   static const int openDoor = 5;
+  static const int start = 6;
 }
 
 class Maze {
@@ -34,7 +35,9 @@ class Maze {
 
   final List<List<int>> cells;
 
-  Maze() : cells = List.generate(height, (_) => List.filled(width, Tile.floor));
+  Maze() : cells = List.generate(height, (_) => List.filled(width, Tile.floor)) {
+    cells[0][0] = Tile.start; // default start position
+  }
 
   Maze.from(List<List<int>> data)
       : cells = data.map((r) => List<int>.from(r)).toList();
@@ -63,10 +66,12 @@ class Maze {
   bool get hasKey => countTile(Tile.key) == 1;
   bool get hasDoor => countTile(Tile.door) == 1;
   bool get hasTreasure => countTile(Tile.treasure) == 1;
-  bool get isStartFloor => get(0, 0) == Tile.floor;
+  bool get hasStart => countTile(Tile.start) == 1;
+
+  Point get startPos => _findTile(Tile.start) ?? const Point(0, 0);
 
   bool get hasRequiredTiles =>
-      hasKey && hasDoor && hasTreasure && isStartFloor && countTile(Tile.wall) <= 20;
+      hasKey && hasDoor && hasTreasure && hasStart && countTile(Tile.wall) <= 20;
 
   bool get isLocallyValid => hasRequiredTiles && isSolvable;
 
@@ -79,14 +84,14 @@ class Maze {
     final treasurePos = _findTile(Tile.treasure);
     if (keyPos == null || doorPos == null || treasurePos == null) return false;
 
-    return _canReach(const Point(0, 0), keyPos, doorOpen: false) &&
+    return _canReach(startPos, keyPos, doorOpen: false) &&
         _canReach(keyPos, doorPos, doorOpen: false) &&
         _canReach(doorPos, treasurePos, doorOpen: true);
   }
 
   /// Human-readable validation error, or null if valid.
   String? get validationError {
-    if (!isStartFloor) return 'Start tile must be empty';
+    if (!hasStart) return 'Place a start tile';
     if (!hasKey) return 'Place a key';
     if (!hasDoor) return 'Place a door';
     if (!hasTreasure) return 'Place a treasure';
@@ -96,7 +101,7 @@ class Maze {
     final doorPos = _findTile(Tile.door);
     final treasurePos = _findTile(Tile.treasure);
 
-    if (!_canReach(const Point(0, 0), keyPos!, doorOpen: false)) {
+    if (!_canReach(startPos, keyPos!, doorOpen: false)) {
       return "Can't reach the key from start";
     }
     if (!_canReach(keyPos, doorPos!, doorOpen: false)) {

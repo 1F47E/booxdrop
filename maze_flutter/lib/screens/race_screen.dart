@@ -27,7 +27,7 @@ class RaceScreen extends StatelessWidget {
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: game.hasKey ? const Color(0xFFFFDD00) : Colors.white24,
+              color: game.hasKey ? const Color(0xFFFFDD00) : const Color(0xFFCCCCCC),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -53,6 +53,30 @@ class RaceScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // Turn indicator
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                left: BorderSide(
+                  color: game.myTurn ? const Color(0xFF00CC00) : const Color(0xFF888888),
+                  width: 4,
+                ),
+              ),
+            ),
+            child: Text(
+              game.myTurn ? 'Your turn!' : 'Waiting...',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: game.myTurn ? const Color(0xFF2E7D32) : const Color(0xFF666666),
+              ),
+            ),
+          ),
+
           // Banner
           if (game.banner != null)
             _RaceBanner(text: game.banner!, type: game.bannerType ?? 'info'),
@@ -62,7 +86,10 @@ class RaceScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              color: const Color(0xFFE3F2FD),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(left: BorderSide(color: Color(0xFF0066FF), width: 4)),
+              ),
               child: Text(
                 game.opponentEvent!,
                 textAlign: TextAlign.center,
@@ -91,7 +118,7 @@ class RaceScreen extends StatelessWidget {
           ),
 
           // D-pad controls
-          _DPad(onMove: game.move),
+          _DPad(onMove: game.move, enabled: game.myTurn),
 
           const SizedBox(height: 12),
         ],
@@ -108,18 +135,22 @@ class _RaceBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = {
-      'info': (const Color(0xFFE3F2FD), const Color(0xFF1565C0)),
-      'success': (const Color(0xFFE8F5E9), const Color(0xFF2E7D32)),
-      'warning': (const Color(0xFFFFF8E1), const Color(0xFFE65100)),
-      'error': (const Color(0xFFFFEBEE), const Color(0xFFC62828)),
+      'info':    (const Color(0xFF0066FF), const Color(0xFF0066FF)),
+      'success': (const Color(0xFF00CC00), const Color(0xFF006600)),
+      'warning': (const Color(0xFFFF8800), const Color(0xFF884400)),
+      'error':   (const Color(0xFFFF0000), const Color(0xFFCC0000)),
     };
-    final (bg, fg) = colors[type] ?? colors['info']!;
+    final (borderColor, textColor) = colors[type] ?? colors['info']!;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      color: bg,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(left: BorderSide(color: borderColor, width: 4)),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Text(text, textAlign: TextAlign.center,
-        style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 15)),
+        style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
     );
   }
 }
@@ -208,7 +239,8 @@ class _RaceGrid extends StatelessWidget {
 
 class _DPad extends StatelessWidget {
   final void Function(String direction) onMove;
-  const _DPad({required this.onMove});
+  final bool enabled;
+  const _DPad({required this.onMove, required this.enabled});
 
   @override
   Widget build(BuildContext context) {
@@ -217,18 +249,18 @@ class _DPad extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _DPadButton(icon: Icons.arrow_upward, onTap: () => onMove('up')),
+          _DPadButton(icon: Icons.arrow_upward, onTap: () => onMove('up'), enabled: enabled),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _DPadButton(icon: Icons.arrow_back, onTap: () => onMove('left')),
+              _DPadButton(icon: Icons.arrow_back, onTap: () => onMove('left'), enabled: enabled),
               const SizedBox(width: 64, height: 64),
-              _DPadButton(icon: Icons.arrow_forward, onTap: () => onMove('right')),
+              _DPadButton(icon: Icons.arrow_forward, onTap: () => onMove('right'), enabled: enabled),
             ],
           ),
           const SizedBox(height: 4),
-          _DPadButton(icon: Icons.arrow_downward, onTap: () => onMove('down')),
+          _DPadButton(icon: Icons.arrow_downward, onTap: () => onMove('down'), enabled: enabled),
         ],
       ),
     );
@@ -238,20 +270,21 @@ class _DPad extends StatelessWidget {
 class _DPadButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _DPadButton({required this.icon, required this.onTap});
+  final bool enabled;
+  const _DPadButton({required this.icon, required this.onTap, required this.enabled});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: Container(
         width: 64,
         height: 64,
         decoration: BoxDecoration(
-          color: const Color(0xFF7700CC),
+          color: enabled ? const Color(0xFF7700CC) : const Color(0xFF999999),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Icon(icon, color: Colors.white, size: 36),
+        child: Icon(icon, color: enabled ? Colors.white : const Color(0xFF666666), size: 36),
       ),
     );
   }

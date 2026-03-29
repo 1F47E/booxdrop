@@ -58,8 +58,9 @@ type Session struct {
 	HostRaceState  *maze.PlayerState
 	GuestRaceState *maze.PlayerState
 
-	Winner    string // device_id of winner
-	RaceStart time.Time
+	Winner     string // device_id of winner
+	ActiveTurn string // device_id of player whose turn it is
+	RaceStart  time.Time
 }
 
 // Registry manages active sessions.
@@ -255,19 +256,24 @@ func (s *Session) StartRace() {
 
 	s.Phase = PhaseRace
 	s.RaceStart = time.Now()
+	s.ActiveTurn = s.Host.DeviceID // host goes first
 
 	// Host explores guest's maze, guest explores host's maze
 	s.HostRaceState = maze.NewPlayerState(s.GuestMaze)
 	s.GuestRaceState = maze.NewPlayerState(s.HostMaze)
 }
 
-// ProcessMove processes a move for a player. Returns the move result and whether the game is over.
-func (s *Session) ProcessMove(deviceID, direction string) (*maze.MoveResult, string, error) {
+// ProcessMove processes a move for a player. Returns the move result, opponent event, new active turn, and error.
+func (s *Session) ProcessMove(deviceID, direction string) (*maze.MoveResult, string, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.Phase != PhaseRace {
-		return nil, "", fmt.Errorf("not in race phase")
+		return nil, "", "", fmt.Errorf("not in race phase")
+	}
+
+	if s.ActiveTurn != deviceID {
+		return nil, "", "", fmt.Errorf("not your turn")
 	}
 
 	var result maze.MoveResult
@@ -294,10 +300,19 @@ func (s *Session) ProcessMove(deviceID, direction string) (*maze.MoveResult, str
 			s.Phase = PhaseGameOver
 		}
 	} else {
-		return nil, "", fmt.Errorf("player not in session")
+		return nil, "", "", fmt.Errorf("player not in session")
 	}
 
-	return &result, opponentEvent, nil
+	// Flip the turn after every move (valid move or wall hit)
+	if s.Host != nil && s.Guest != nil {
+		if s.ActiveTurn == s.Host.DeviceID {
+			s.ActiveTurn = s.Guest.DeviceID
+		} else {
+			s.ActiveTurn = s.Host.DeviceID
+		}
+	}
+
+	return &result, opponentEvent, s.ActiveTurn, nil
 }
 
 // GetOpponent returns the opponent player for a given device ID.
@@ -366,6 +381,7 @@ func (s *Session) ResetForRematch() {
 	s.HostRaceState = nil
 	s.GuestRaceState = nil
 	s.Winner = ""
+	s.ActiveTurn = ""
 	s.RaceStart = time.Time{}
 }
 

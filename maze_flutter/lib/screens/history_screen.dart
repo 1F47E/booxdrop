@@ -44,7 +44,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final game = context.read<GameProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0E6FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFF7C4DFF),
         foregroundColor: Colors.white,
@@ -110,7 +110,7 @@ class _MatchCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: iPlayed
-              ? (iWon ? const Color(0xFF4CAF50) : const Color(0xFFFF4444))
+              ? (iWon ? const Color(0xFF00CC00) : const Color(0xFFFF0000))
               : Colors.grey.shade300,
           width: iPlayed ? 2 : 1,
         ),
@@ -160,10 +160,10 @@ class _MatchCard extends StatelessWidget {
                       margin: const EdgeInsets.only(left: 6),
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
+                        color: const Color(0xFF00AA00),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text('You', style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w900)),
+                      child: const Text('You', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w900)),
                     ),
                 ],
               ),
@@ -189,7 +189,7 @@ class _MatchCard extends StatelessWidget {
                         color: const Color(0xFFFF4444),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text('You', style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w900)),
+                      child: const Text('You', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w900)),
                     ),
                 ],
               ),
@@ -224,7 +224,7 @@ class _MatchDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0E6FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFF7C4DFF),
         foregroundColor: Colors.white,
@@ -249,13 +249,13 @@ class _MatchDetailScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4CAF50),
+                      color: Color(0xFF006600),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${match.durationText} \u{2022} ${match.winnerMoves} vs ${match.loserMoves} moves',
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   Text(
                     _formatDate(match.playedAt),
@@ -305,7 +305,7 @@ class _MazeSection extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isWinner ? const Color(0xFF4CAF50) : Colors.grey.shade300,
+          color: isWinner ? const Color(0xFF00CC00) : Colors.grey.shade300,
           width: isWinner ? 2 : 1,
         ),
       ),
@@ -317,7 +317,7 @@ class _MazeSection extends StatelessWidget {
               if (isWinner) const Text('\u{1F3C6} ', style: TextStyle(fontSize: 16)),
               Text(
                 label,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -359,7 +359,7 @@ class _MiniMazeGrid extends StatelessWidget {
         final y = h - 1 - row;
         final x = col;
         final tile = maze[y][x];
-        final isStart = x == 0 && y == 0;
+        final isStart = tile == Tile.start;
 
         return Container(
           decoration: BoxDecoration(
@@ -370,7 +370,7 @@ class _MiniMazeGrid extends StatelessWidget {
           child: Center(
             child: Text(
               _emoji(tile, isStart),
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 16),
             ),
           ),
         );
@@ -379,24 +379,24 @@ class _MiniMazeGrid extends StatelessWidget {
   }
 
   Color _color(int tile, bool isStart) {
-    if (isStart) return const Color(0xFFC8FFC8);
+    if (isStart) return const Color(0xFF00CC00);
     return switch (tile) {
-      Tile.wall => const Color(0xFF2C2C3A),
-      Tile.key => const Color(0xFFFFF8DC),
-      Tile.door => const Color(0xFFE0D4FF),
-      Tile.treasure => const Color(0xFFFFE0E0),
-      _ => const Color(0xFFE8E8F0),
+      Tile.wall => const Color(0xFF222222),
+      Tile.key => const Color(0xFFFFDD00),
+      Tile.door => const Color(0xFF7700CC),
+      Tile.treasure => const Color(0xFFFF0000),
+      _ => const Color(0xFFF5F5F5),
     };
   }
 
   Color _border(int tile, bool isStart) {
-    if (isStart) return const Color(0xFF4CAF50);
+    if (isStart) return const Color(0xFF006600);
     return switch (tile) {
-      Tile.wall => const Color(0xFF555555),
-      Tile.key => const Color(0xFFFFD700),
-      Tile.door => const Color(0xFF7C4DFF),
-      Tile.treasure => const Color(0xFFFF4444),
-      _ => const Color(0xFFDDDDDD),
+      Tile.wall => const Color(0xFF000000),
+      Tile.key => const Color(0xFFCC9900),
+      Tile.door => const Color(0xFF5500AA),
+      Tile.treasure => const Color(0xFFCC0000),
+      _ => const Color(0xFFBBBBBB),
     };
   }
 

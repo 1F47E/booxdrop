@@ -37,12 +37,12 @@ func NewPlayerState(m *Maze) *PlayerState {
 	}
 
 	ps := &PlayerState{
-		Position: StartPos(),
+		Position: m.StartPos(),
 		Revealed: revealed,
 	}
 
 	// Reveal start and neighbors
-	ps.revealAround(StartPos(), m)
+	ps.revealAround(m.StartPos(), m)
 
 	return ps
 }

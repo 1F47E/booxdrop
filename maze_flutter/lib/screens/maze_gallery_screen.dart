@@ -245,7 +245,7 @@ class _MiniGrid extends StatelessWidget {
         final y = h - 1 - row;
         final x = col;
         final tile = cells[y][x];
-        final isStart = x == 0 && y == 0;
+        final isStart = tile == Tile.start;
 
         return Container(
           decoration: BoxDecoration(

@@ -9,6 +9,7 @@ const (
 	TileKey      = 2
 	TileDoor     = 3
 	TileTreasure = 4
+	TileStart    = 6
 )
 
 // Discovered tile codes (runtime)
@@ -73,8 +74,15 @@ func (m *Maze) Set(x, y, tile int) {
 	}
 }
 
-// StartPos returns the fixed start position (0, 0).
-func StartPos() Point {
+// StartPos returns the start position by finding the start tile, or (0,0) as fallback.
+func (m *Maze) StartPos() Point {
+	for y := 0; y < m.Height; y++ {
+		for x := 0; x < m.Width; x++ {
+			if m.Get(x, y) == TileStart {
+				return Point{X: x, Y: y}
+			}
+		}
+	}
 	return Point{X: 0, Y: 0}
 }
 
@@ -85,17 +93,18 @@ func (m *Maze) Validate() error {
 		return fmt.Errorf("maze must be 7x7, got %dx%d", m.Width, m.Height)
 	}
 
-	// Check start tile is floor
-	if m.Get(0, 0) != TileFloor {
-		return fmt.Errorf("start tile (0,0) must be floor")
-	}
-
 	// Count special tiles
-	var keyPos, doorPos, treasurePos *Point
+	var keyPos, doorPos, treasurePos, startPos *Point
 	wallCount := 0
 	for y := 0; y < m.Height; y++ {
 		for x := 0; x < m.Width; x++ {
 			switch m.Get(x, y) {
+			case TileStart:
+				if startPos != nil {
+					return fmt.Errorf("multiple start tiles found")
+				}
+				p := Point{X: x, Y: y}
+				startPos = &p
 			case TileKey:
 				if keyPos != nil {
 					return fmt.Errorf("multiple keys found")
@@ -120,6 +129,9 @@ func (m *Maze) Validate() error {
 		}
 	}
 
+	if startPos == nil {
+		return fmt.Errorf("maze must have exactly one start tile")
+	}
 	if keyPos == nil {
 		return fmt.Errorf("maze must have exactly one key")
 	}
@@ -134,7 +146,7 @@ func (m *Maze) Validate() error {
 	}
 
 	// Reachability: start -> key (no door crossing)
-	if !m.reachable(StartPos(), *keyPos, false) {
+	if !m.reachable(*startPos, *keyPos, false) {
 		return fmt.Errorf("key is not reachable from start without crossing door")
 	}
 
@@ -149,7 +161,7 @@ func (m *Maze) Validate() error {
 	}
 
 	// Minimum path length check
-	pathLen := m.shortestPath(StartPos(), *keyPos, false) +
+	pathLen := m.shortestPath(*startPos, *keyPos, false) +
 		m.shortestPath(*keyPos, *doorPos, false) +
 		m.shortestPath(*doorPos, *treasurePos, true)
 	if pathLen < 8 {

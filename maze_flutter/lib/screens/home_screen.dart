@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/ota_controller.dart';
+import '../models/maze.dart';
 import '../providers/game_provider.dart';
 import '../widgets/ota_menu_footer.dart';
 import 'history_screen.dart';
@@ -40,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final otaController = context.read<OtaController>();
     return Scaffold(
-      backgroundColor: const Color(0xFFF0E6FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: Builder(
           builder: (ctx) => IconButton(
@@ -55,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Color(0xFF7C4DFF),
           ),
         ),
-        backgroundColor: const Color(0xFFF0E6FF),
+        backgroundColor: Colors.white,
         elevation: 0,
       ),
       drawer: _MazeDrawer(otaController: otaController),
@@ -158,12 +159,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Icon(
                           _showCodeSection ? Icons.expand_less : Icons.expand_more,
                           color: const Color(0xFF444444),
-                          size: 20,
+                          size: 28,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _showCodeSection ? 'Hide code options' : 'Use invite code',
-                          style: const TextStyle(fontSize: 14, color: Color(0xFF9575CD)),
+                          style: const TextStyle(fontSize: 16, color: Color(0xFF666666)),
                         ),
                       ],
                     ),
@@ -175,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Create with code
                     SizedBox(
                       width: double.infinity,
-                      height: 44,
+                      height: 48,
                       child: OutlinedButton(
                         onPressed: () => game.startRace(),
                         style: OutlinedButton.styleFrom(
@@ -185,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Create with Code', style: TextStyle(fontSize: 15)),
+                        child: const Text('Create with Code', style: TextStyle(fontSize: 16)),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -259,13 +260,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   // History button
                   SizedBox(
                     width: double.infinity,
-                    height: 44,
+                    height: 48,
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const HistoryScreen()),
                       ),
                       icon: const Icon(Icons.history, size: 20),
-                      label: const Text('Match History', style: TextStyle(fontSize: 15)),
+                      label: const Text('Match History', style: TextStyle(fontSize: 16)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF7C4DFF),
                         side: const BorderSide(color: Color(0xFF7C4DFF)),
@@ -319,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             const Text('Choose a maze to play with, or build a new one',
-              style: TextStyle(fontSize: 13, color: Colors.grey)),
+              style: TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 12),
 
             // Build New option
@@ -332,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8E8F0),
+                  color: const Color(0xFFEEEEEE),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFCCCCCC)),
                 ),
@@ -385,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                 Text(
                                   '${m.createdAt.day}/${m.createdAt.month}/${m.createdAt.year}',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                                 ),
                               ],
                             ),
@@ -435,20 +436,20 @@ class _MazePainter extends CustomPainter {
       for (int x = 0; x < w; x++) {
         final tile = cells[y][x];
         final rect = Rect.fromLTWH(x * cellW, (h - 1 - y) * cellH, cellW, cellH);
-        final paint = Paint()..color = _color(tile, x == 0 && y == 0);
+        final paint = Paint()..color = _color(tile);
         canvas.drawRect(rect, paint);
       }
     }
   }
 
-  Color _color(int tile, bool isStart) {
-    if (isStart) return const Color(0xFF4CAF50);
+  Color _color(int tile) {
     return switch (tile) {
-      1 => const Color(0xFF333333),  // wall
-      2 => const Color(0xFFFFD700),  // key
-      3 => const Color(0xFF7C4DFF),  // door
-      4 => const Color(0xFFFF1744),  // treasure
-      _ => const Color(0xFFE8E8F0),  // floor
+      Tile.start => const Color(0xFF00CC00),
+      1 => const Color(0xFF222222),  // wall
+      2 => const Color(0xFFFFDD00),  // key
+      3 => const Color(0xFF7700CC),  // door
+      4 => const Color(0xFFFF0000),  // treasure
+      _ => const Color(0xFFF5F5F5),  // floor
     };
   }
 
@@ -464,24 +465,25 @@ class _BannerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = {
-      'info': (const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
-      'success': (const Color(0xFFE8F5E9), const Color(0xFF388E3C)),
-      'warning': (const Color(0xFFFFF8E1), const Color(0xFFF57F17)),
-      'error': (const Color(0xFFFFEBEE), const Color(0xFFC62828)),
+      'info':    (const Color(0xFF0066FF), const Color(0xFF0066FF)),
+      'success': (const Color(0xFF00CC00), const Color(0xFF006600)),
+      'warning': (const Color(0xFFFF8800), const Color(0xFF884400)),
+      'error':   (const Color(0xFFFF0000), const Color(0xFFCC0000)),
     };
-    final (bg, fg) = colors[type] ?? colors['info']!;
+    final (borderColor, textColor) = colors[type] ?? colors['info']!;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       decoration: BoxDecoration(
-        color: bg,
+        color: Colors.white,
+        border: Border(left: BorderSide(color: borderColor, width: 4)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 15),
+        style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
       ),
     );
   }
