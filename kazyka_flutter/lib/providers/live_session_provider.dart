@@ -18,11 +18,13 @@ class PeerIdentity {
   final String deviceId;
   final String displayName;
   final String deviceLabel;
+  final int protocolVersion;
 
   PeerIdentity({
     required this.deviceId,
     this.displayName = '',
     this.deviceLabel = '',
+    this.protocolVersion = 0,
   });
 
   String get label => displayName.isNotEmpty ? displayName : 'device $deviceLabel';
@@ -31,10 +33,13 @@ class PeerIdentity {
         deviceId: json['device_id'] as String? ?? '',
         displayName: json['display_name'] as String? ?? '',
         deviceLabel: json['device_label'] as String? ?? '',
+        protocolVersion: json['protocol_version'] as int? ?? 0,
       );
 }
 
 class LiveSessionProvider extends ChangeNotifier {
+  static const protocolVersion = 2;
+
   final CollaborationTransport _transport;
 
   LiveSessionState _state = LiveSessionState.idle;
@@ -46,10 +51,12 @@ class LiveSessionProvider extends ChangeNotifier {
   int _reconnectSecondsLeft = 0;
   Timer? _reconnectTimer;
   StreamSubscription? _eventSub;
+  int? _sessionCanvasSize;
 
   // Canvas items from remote
   final List<CanvasStroke> remoteStrokes = [];
   final List<CanvasText> remoteTexts = [];
+  final List<CanvasFill> remoteFills = [];
 
   // Callback for when remote host clears the canvas
   VoidCallback? onRemoteClear;
@@ -61,6 +68,7 @@ class LiveSessionProvider extends ChangeNotifier {
   PeerIdentity? get peer => _peer;
   String? get error => _error;
   int get reconnectSecondsLeft => _reconnectSecondsLeft;
+  int? get sessionCanvasSize => _sessionCanvasSize;
   bool get isLive => _state == LiveSessionState.connected ||
       _state == LiveSessionState.waiting;
   bool get isHost => _role == 'host';
@@ -87,6 +95,7 @@ class LiveSessionProvider extends ChangeNotifier {
           'display_name': displayName,
           'platform': 'android',
           'app_version': '1.0.0',
+          'protocol_version': protocolVersion,
         },
       });
 
@@ -121,6 +130,7 @@ class LiveSessionProvider extends ChangeNotifier {
           'display_name': displayName,
           'platform': 'android',
           'app_version': '1.0.0',
+          'protocol_version': protocolVersion,
         },
       });
 
@@ -156,6 +166,7 @@ class LiveSessionProvider extends ChangeNotifier {
           'display_name': displayName,
           'platform': 'android',
           'app_version': '1.0.0',
+          'protocol_version': protocolVersion,
         },
       });
 
@@ -198,6 +209,7 @@ class LiveSessionProvider extends ChangeNotifier {
           'display_name': displayName,
           'platform': 'android',
           'app_version': '1.0.0',
+          'protocol_version': protocolVersion,
         },
       });
 
@@ -252,6 +264,7 @@ class LiveSessionProvider extends ChangeNotifier {
         'stroke_id': stroke.id,
         'color_value': stroke.colorValue,
         'width': stroke.width,
+        'brush_type': stroke.brushType.name,
       },
     });
   }
@@ -286,6 +299,15 @@ class LiveSessionProvider extends ChangeNotifier {
     });
   }
 
+  void sendFill(CanvasFill fill) {
+    if (!isLive) return;
+    _transport.send({
+      'type': 'fill',
+      'session_id': _sessionId,
+      'payload': fill.toJson(),
+    });
+  }
+
   void sendClear() {
     if (!isLive || !isHost) return;
     _transport.send({
@@ -308,6 +330,9 @@ class LiveSessionProvider extends ChangeNotifier {
         _sessionId = payload?['session_id'] as String?;
         _joinCode = payload?['join_code'] as String?;
         _role = payload?['role'] as String?;
+        if (payload?['canvas_size'] != null) {
+          _sessionCanvasSize = payload!['canvas_size'] as int;
+        }
         // Host waits for peer; guest stays in joining until peer_joined arrives
         _state = _role == 'host'
             ? LiveSessionState.waiting
@@ -320,6 +345,9 @@ class LiveSessionProvider extends ChangeNotifier {
         _sessionId = payload?['session_id'] as String?;
         _joinCode = payload?['join_code'] as String?;
         _role = payload?['role'] as String?;
+        if (payload?['canvas_size'] != null) {
+          _sessionCanvasSize = payload!['canvas_size'] as int;
+        }
         _state = LiveSessionState.connected;
         _cacheSessionId();
         notifyListeners();
@@ -333,6 +361,15 @@ class LiveSessionProvider extends ChangeNotifier {
       case 'peer_joined':
         final peerData = payload?['peer'] as Map<String, dynamic>?;
         if (peerData != null) {
+          final peerProtoVersion = peerData['protocol_version'] as int? ?? 0;
+          if (peerProtoVersion < 2) {
+            _error = 'Other Kazyka app is too old';
+            _state = LiveSessionState.error;
+            notifyListeners();
+            // Disconnect after a delay so the error UI is visible
+            Future.delayed(const Duration(seconds: 3), leaveSession);
+            break;
+          }
           _peer = PeerIdentity.fromJson(peerData);
         }
         _state = LiveSessionState.connected;
@@ -357,6 +394,9 @@ class LiveSessionProvider extends ChangeNotifier {
 
       case 'snapshot':
         // version tracked for future sync validation
+        if (payload?['canvas_size'] != null) {
+          _sessionCanvasSize = payload!['canvas_size'] as int;
+        }
         final items = payload?['items'] as List? ?? [];
         remoteStrokes.clear();
         remoteTexts.clear();
@@ -376,11 +416,13 @@ class LiveSessionProvider extends ChangeNotifier {
           final strokeId = payload['stroke_id'] as String?;
           final colorValue = payload['color_value'] as int?;
           final width = (payload['width'] as num?)?.toDouble();
+          final brushName = payload['brush_type'] as String? ?? 'round';
           if (strokeId != null && colorValue != null && width != null) {
             remoteStrokes.add(CanvasStroke(
               id: strokeId,
               colorValue: colorValue,
               width: width,
+              brushType: BrushType.values.byName(brushName),
             ));
             notifyListeners();
           }
@@ -415,9 +457,17 @@ class LiveSessionProvider extends ChangeNotifier {
         }
         break;
 
+      case 'fill':
+        if (payload != null) {
+          remoteFills.add(CanvasFill.fromJson(payload));
+          notifyListeners();
+        }
+        break;
+
       case 'clear':
         remoteStrokes.clear();
         remoteTexts.clear();
+        remoteFills.clear();
         onRemoteClear?.call();
         notifyListeners();
         break;
@@ -455,9 +505,11 @@ class LiveSessionProvider extends ChangeNotifier {
     _peer = null;
     _error = null;
     _reconnectSecondsLeft = 0;
+    _sessionCanvasSize = null;
     _reconnectTimer?.cancel();
     remoteStrokes.clear();
     remoteTexts.clear();
+    remoteFills.clear();
   }
 
   @override

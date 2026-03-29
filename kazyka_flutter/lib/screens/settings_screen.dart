@@ -70,6 +70,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(fontSize: 16, color: const Color(0xFF444444)),
           ),
           const SizedBox(height: 32),
+
+          // Canvas size
+          const Text(
+            'Canvas Size',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Consumer<SettingsService>(
+            builder: (_, settings, _) {
+              const labels = {1024: 'Small', 2048: 'Medium', 4096: 'Large'};
+              return Row(
+                children: SettingsService.canvasSizeOptions.map((size) {
+                  final selected = settings.defaultCanvasSize == size;
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GestureDetector(
+                        onTap: () => settings.setDefaultCanvasSize(size),
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: selected ? Colors.black : Colors.white,
+                            border: Border.all(
+                              color: Colors.black,
+                              width: selected ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${labels[size]}\n$size',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: selected ? Colors.white : Colors.black,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Default size for new drawings',
+            style: TextStyle(fontSize: 16, color: Color(0xFF444444)),
+          ),
+
+          const SizedBox(height: 32),
           Center(
             child: Text(
               'Kazyka v${AppVersion.version}${AppVersion.buildDate.isNotEmpty ? ' \u00b7 ${AppVersion.buildDate}' : ''}',

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import 'drawing_screen.dart';
 
 class DrawingViewerScreen extends StatelessWidget {
   final String path;
@@ -37,6 +38,31 @@ class DrawingViewerScreen extends StatelessWidget {
     }
   }
 
+  void _onEditCopy(BuildContext context) async {
+    // Try to load the editable sidecar
+    final doc = await StorageService.loadDocument(path);
+
+    if (!context.mounted) return;
+
+    if (doc != null) {
+      // v2 drawing with sidecar — reopen fully editable
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DrawingScreen(initialDocument: doc),
+        ),
+      );
+    } else {
+      // Legacy PNG-only — open as background reference
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DrawingScreen(backgroundImagePath: path),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,6 +71,11 @@ class DrawingViewerScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.black),
+            onPressed: () => _onEditCopy(context),
+            tooltip: 'Edit copy',
+          ),
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.black),
             onPressed: () => _onDelete(context),
@@ -58,7 +89,7 @@ class DrawingViewerScreen extends StatelessWidget {
           fit: BoxFit.contain,
           errorBuilder: (_, _, _) => const Text(
             'Image not found',
-            style: TextStyle(color: const Color(0xFF444444), fontSize: 16),
+            style: TextStyle(color: Color(0xFF444444), fontSize: 16),
           ),
         ),
       ),

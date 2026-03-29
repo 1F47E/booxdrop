@@ -5,12 +5,14 @@ class CanvasSessionSnapshot {
   final List<CanvasStroke> strokes;
   final List<CanvasText> texts;
   final int version;
+  final int canvasSize;
 
   CanvasSessionSnapshot({
     this.sessionId = '',
     List<CanvasStroke>? strokes,
     List<CanvasText>? texts,
     this.version = 0,
+    this.canvasSize = 2048,
   })  : strokes = strokes ?? [],
         texts = texts ?? [];
 
@@ -19,6 +21,7 @@ class CanvasSessionSnapshot {
         'strokes': strokes.map((s) => s.toJson()).toList(),
         'texts': texts.map((t) => t.toJson()).toList(),
         'version': version,
+        'canvas_size': canvasSize,
       };
 
   factory CanvasSessionSnapshot.fromJson(Map<String, dynamic> json) =>
@@ -35,6 +38,7 @@ class CanvasSessionSnapshot {
                 .toList() ??
             [],
         version: (json['version'] as int?) ?? 0,
+        canvasSize: (json['canvas_size'] as int?) ?? 2048,
       );
 
   CanvasSessionSnapshot copyWith({
@@ -42,11 +46,13 @@ class CanvasSessionSnapshot {
     List<CanvasStroke>? strokes,
     List<CanvasText>? texts,
     int? version,
+    int? canvasSize,
   }) =>
       CanvasSessionSnapshot(
         sessionId: sessionId ?? this.sessionId,
         strokes: strokes ?? this.strokes,
         texts: texts ?? this.texts,
         version: version ?? this.version,
+        canvasSize: canvasSize ?? this.canvasSize,
       );
 }

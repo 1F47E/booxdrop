@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
+import '../models/canvas_item.dart';
 
-class StrokePicker extends StatelessWidget {
-  final double selected;
-  final ValueChanged<double> onChanged;
+class BrushPicker extends StatelessWidget {
+  final BrushType selected;
+  final ValueChanged<BrushType> onChanged;
 
-  const StrokePicker({
+  const BrushPicker({
     super.key,
     required this.selected,
     required this.onChanged,
   });
 
-  static const widths = [2.0, 4.0, 8.0, 16.0, 24.0, 36.0];
+  static const _labels = {
+    BrushType.round: 'Round',
+    BrushType.flat: 'Flat',
+    BrushType.marker: 'Marker',
+    BrushType.crayon: 'Crayon',
+  };
+
+  static const _icons = {
+    BrushType.round: Icons.circle,
+    BrushType.flat: Icons.horizontal_rule,
+    BrushType.marker: Icons.format_paint,
+    BrushType.crayon: Icons.brush,
+  };
 
   void _showPicker(BuildContext context) {
     showModalBottomSheet(
@@ -25,7 +38,7 @@ class StrokePicker extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Stroke Width',
+              'Brush Type',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -36,32 +49,38 @@ class StrokePicker extends StatelessWidget {
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: widths.map((w) {
-                final isSelected = selected == w;
+              children: BrushType.values.map((brush) {
+                final isSelected = selected == brush;
                 return GestureDetector(
                   onTap: () {
-                    onChanged(w);
+                    onChanged(brush);
                     Navigator.pop(ctx);
                   },
                   child: Container(
-                    width: 64,
-                    height: 64,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isSelected ? Colors.black : const Color(0xFF999999),
+                        color: isSelected
+                            ? Colors.black
+                            : const Color(0xFF999999),
                         width: isSelected ? 3 : 1,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Center(
-                      child: Container(
-                        width: (w + 2).clamp(6, 40),
-                        height: (w + 2).clamp(6, 40),
-                        decoration: const BoxDecoration(
-                          color: Colors.black,
-                          shape: BoxShape.circle,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(_icons[brush], size: 28, color: Colors.black),
+                        const SizedBox(height: 4),
+                        Text(
+                          _labels[brush]!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 );
@@ -84,16 +103,7 @@ class StrokePicker extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: Colors.black, width: 2),
         ),
-        child: Center(
-          child: Container(
-            width: (selected + 2).clamp(4, 24),
-            height: (selected + 2).clamp(4, 24),
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
+        child: Icon(_icons[selected], size: 22, color: Colors.black),
       ),
     );
   }
