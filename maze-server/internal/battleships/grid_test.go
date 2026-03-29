@@ -228,3 +228,59 @@ func standardFleet() []ShipPlacement {
 		},
 	}
 }
+
+func TestSimFleet(t *testing.T) {
+	// Bob's fleet from the sim
+	fleet := []ShipPlacement{
+		{Type: ShipCarrier, Cells: []Point{{2,2},{3,2},{4,2},{5,2}}},
+		{Type: ShipBattleship, Cells: []Point{{0,0},{1,0},{2,0}}},
+		{Type: ShipCruiser, Cells: []Point{{3,6},{4,6}}},
+		{Type: ShipSub, Cells: []Point{{4,4},{5,4}}},
+	}
+	
+	if err := ValidateFleet(fleet, Width, Height); err != nil {
+		t.Fatalf("fleet invalid: %v", err)
+	}
+
+	bs := NewBattleState(fleet)
+	
+	// Fire at (1,2) — should be MISS (no ship there)
+	r, _, _, _ := bs.MyGrid.FireShot(1, 2)
+	if r != "miss" {
+		t.Fatalf("(1,2) expected miss, got %s. Cell was %d", r, bs.MyGrid.Cells[2][1])
+	}
+	
+	// Fire at (2,2) — carrier cell, should be HIT
+	r, _, _, _ = bs.MyGrid.FireShot(2, 2)
+	if r != "hit" {
+		t.Fatalf("(2,2) expected hit, got %s", r)
+	}
+}
+
+func TestSubSinkExact(t *testing.T) {
+	fleet := []ShipPlacement{
+		{Type: ShipCarrier, Cells: []Point{{0,5},{1,5},{2,5},{3,5}}},
+		{Type: ShipBattleship, Cells: []Point{{0,3},{1,3},{2,3}}},
+		{Type: ShipCruiser, Cells: []Point{{3,0},{4,0}}},
+		{Type: ShipSub, Cells: []Point{{0,0},{1,0}}},
+	}
+	
+	bs := NewBattleState(fleet)
+	t.Logf("Cell (0,0)=%d, (1,0)=%d", bs.MyGrid.Cells[0][0], bs.MyGrid.Cells[0][1])
+	
+	r1, _, _, _ := bs.MyGrid.FireShot(0, 0)
+	t.Logf("Shot (0,0): %s, cell now=%d", r1, bs.MyGrid.Cells[0][0])
+	
+	r2, shipType, _, gameOver := bs.MyGrid.FireShot(1, 0)
+	t.Logf("Shot (1,0): %s, shipType=%s, gameOver=%v", r2, shipType, gameOver)
+	
+	if r2 != "sunk" {
+		for i, ship := range fleet {
+			for _, c := range ship.Cells {
+				cell := bs.MyGrid.Cells[c.Y][c.X]
+				t.Logf("  Ship %d (%s) cell (%d,%d) = %d", i, ship.Type.Name, c.X, c.Y, cell)
+			}
+		}
+		t.Fatalf("Expected sunk, got %s", r2)
+	}
+}
