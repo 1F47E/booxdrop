@@ -297,6 +297,7 @@ class BattleProvider extends ChangeNotifier {
     _reset();
     _connectionMode = ConnectionMode.btGuest;
     _isHost = false;
+    _btWaiting = true;
     _setBanner('Connecting to ${device.name ?? device.address}...', 'info');
     notifyListeners();
 
@@ -358,7 +359,21 @@ class BattleProvider extends ChangeNotifier {
       _wsTransport ??= WsGameTransport();
       _switchTransport(_wsTransport!);
     }
+    _phase = BattlePhase.lobby;
+    _setBanner('Connecting...', 'info');
+    notifyListeners();
+
     await _ws.connect();
+    // Give WS a moment to establish
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    if (!_ws.isConnected) {
+      _phase = BattlePhase.home;
+      _setBanner('Cannot connect to server', 'error');
+      notifyListeners();
+      return;
+    }
+
     _ws.sendHello(_deviceId!, _displayName, '1.0.0');
     _connected = true;
     notifyListeners();
@@ -368,11 +383,15 @@ class BattleProvider extends ChangeNotifier {
     _connected = false;
     _btWaiting = false;
     // Show user-friendly message instead of raw error codes
-    final friendlyMsg = reason.contains('1001') || reason.contains('401')
-        ? 'Connection lost — no opponent found'
-        : reason.contains('refused')
-            ? 'Cannot connect to server'
-            : 'Disconnected';
+    final friendlyMsg = reason.contains('refused')
+        ? 'Cannot connect to server'
+        : reason.contains('bluetooth') || reason.contains('BT')
+            ? 'Lost connection to opponent'
+            : reason.contains('failed to connect')
+                ? 'Could not find the game — try again'
+                : reason.contains('timeout') || reason.contains('1001')
+                    ? 'No opponent found — try again'
+                    : 'Lost connection';
     _setBanner(friendlyMsg, 'error');
     _phase = BattlePhase.home; // return to home so user can retry
     notifyListeners();
@@ -542,7 +561,12 @@ class BattleProvider extends ChangeNotifier {
 
       case 'fleet_invalid':
         _fleetValid = false;
-        final errMsg = payload['error'] as String? ?? 'Invalid fleet';
+        final raw = payload['error'] as String? ?? '';
+        final errMsg = raw.contains('overlap') ? 'Ships cannot overlap'
+            : raw.contains('adjacent') ? 'Ships cannot touch each other'
+            : raw.contains('bounds') ? 'Ships must fit on the board'
+            : raw.contains('count') ? 'Place all 4 ships'
+            : raw.isEmpty ? 'Invalid fleet' : 'Ships placed incorrectly';
         _setBanner(errMsg, 'error');
 
       case 'peer_fleet_placed':
@@ -598,7 +622,7 @@ class BattleProvider extends ChangeNotifier {
         }
 
       case 'version_mismatch':
-        _setBanner(payload['message'] as String? ?? 'Version mismatch', 'error');
+        _setBanner('Please update the app to play', 'error');
 
       case 'peer_left':
         _setBanner('${_peerName ?? 'Opponent'} left', 'error');

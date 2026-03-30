@@ -114,7 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
         message: battle.banner!,
         onRetry: () {
           battle.leave();
-          setState(() {});
+          _codeController.clear();
+          setState(() => _showJoinCode = false);
         },
       );
     }
@@ -537,7 +538,7 @@ class _ModeToggle extends StatelessWidget {
       child: Row(
         children: [
           _seg('Online', Icons.wifi, !isBluetooth, true, onOnline),
-          Container(width: 2, height: 52, color: const Color(0xFF1565C0)),
+          Container(width: 2, height: 60, color: const Color(0xFF1565C0)),
           _seg('Bluetooth', Icons.bluetooth, isBluetooth, false, onBluetooth),
         ],
       ),
@@ -551,7 +552,7 @@ class _ModeToggle extends StatelessWidget {
       child: GestureDetector(
         onTap: active ? null : onTap,
         child: Container(
-          height: 52,
+          height: 60,
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.only(
