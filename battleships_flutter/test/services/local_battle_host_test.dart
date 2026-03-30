@@ -569,11 +569,13 @@ void main() {
         }
 
         // Not done yet — guest fires a miss to hand back the turn.
-        final missX = (i % 4); // guaranteed miss on host fleet side
+        // Use unique cells: row 7 cols 0-7, then row 1 cols 0-7
+        final missX = i % 8;
+        final missY = i < 8 ? 7 : 1; // both rows are empty in host fleet
         engine.processMessage(kGuest, {
           'type': 'fire_shot',
           'session_id': 'local_session',
-          'payload': {'x': missX, 'y': 7}, // row 7 is always empty
+          'payload': {'x': missX, 'y': missY},
         });
       }
 

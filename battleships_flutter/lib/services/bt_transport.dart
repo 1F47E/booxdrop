@@ -169,7 +169,12 @@ class BtHostTransport extends GameTransport {
   // -------------------------------------------------------------------------
 
   void _startListening() {
-    _inputSub = _connection!.input!.listen(
+    final input = _connection?.input;
+    if (input == null) {
+      _onConnectionLost();
+      return;
+    }
+    _inputSub = input.listen(
       _onGuestBytes,
       onDone: _onConnectionLost,
       onError: (_) => _onConnectionLost(),
@@ -355,7 +360,12 @@ class BtGuestTransport extends GameTransport {
   // -------------------------------------------------------------------------
 
   void _startListening() {
-    _inputSub = _connection!.input!.listen(
+    final input = _connection?.input;
+    if (input == null) {
+      _onConnectionLost();
+      return;
+    }
+    _inputSub = input.listen(
       _onBytes,
       onDone: _onConnectionLost,
       onError: (_) => _onConnectionLost(),

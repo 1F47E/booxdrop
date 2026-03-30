@@ -108,8 +108,8 @@ class _BattleGrid {
     }
 
     if (cell == _Cell.hit || cell == _Cell.miss || cell == _Cell.sunk) {
-      // Already fired here — treat as miss.
-      return const _ShotOutcome(result: 'miss', gameOver: false);
+      // Already fired here — reject.
+      return const _ShotOutcome(result: 'already_fired', gameOver: false);
     }
 
     // Ship cell hit.
@@ -575,6 +575,15 @@ class LocalBattleHost {
         })
       ];
     }
+    if (_phase != _Phase.place) {
+      return [
+        _toSender(deviceId, {
+          'type': 'fleet_invalid',
+          'session_id': _sessionId,
+          'payload': {'error': 'cannot submit fleet in current phase'},
+        })
+      ];
+    }
 
     final shipsRaw = p['ships'] as List<dynamic>? ?? [];
     final fleet = <_PlacedShip>[];
@@ -721,12 +730,22 @@ class LocalBattleHost {
     final x = (p['x'] as num?)?.toInt() ?? 0;
     final y = (p['y'] as num?)?.toInt() ?? 0;
 
+    // Bounds check.
+    if (x < 0 || x >= _BattleGrid.gridSize || y < 0 || y >= _BattleGrid.gridSize) {
+      return [_toSender(deviceId, _errorMsg(_sessionId, 'coordinates out of bounds'))];
+    }
+
     final isHost = deviceId == _hostDeviceId;
     final shooterState = isHost ? _hostBattleState! : _guestBattleState!;
     final targetState = isHost ? _guestBattleState! : _hostBattleState!;
 
     // Fire on the opponent's MyGrid.
     final outcome = targetState.myGrid.fireShot(x, y);
+
+    // Reject duplicate shots.
+    if (outcome.result == 'already_fired') {
+      return [_toSender(deviceId, _errorMsg(_sessionId, 'already fired here'))];
+    }
 
     // Mirror the result onto the shooter's TargetGrid for UI display.
     if (outcome.result == 'miss') {
