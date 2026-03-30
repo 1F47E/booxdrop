@@ -36,7 +36,7 @@ class _GridCell extends StatelessWidget {
         border: Border.all(color: _kBorderColor, width: _kBorderWidth / 2),
       ),
       child: emoji != null
-          ? Center(child: Text(emoji!, style: const TextStyle(fontSize: 16)))
+          ? Center(child: Text(emoji!, style: const TextStyle(fontSize: 18)))
           : null,
     );
 
@@ -98,6 +98,9 @@ class GridWidget extends StatelessWidget {
   }
 
   String? _emojiFor(int x, int y) {
+    final pt = ShipPoint(x, y);
+    if (invalidCells.contains(pt) || previewCells.contains(pt)) return null;
+
     final state = grid.get(x, y);
     switch (state) {
       case CellState.ship:
@@ -105,7 +108,7 @@ class GridWidget extends StatelessWidget {
       case CellState.hit:
         return '💥';
       case CellState.miss:
-        return '•';
+        return '●';
       case CellState.sunk:
         return '🔥';
       default:
