@@ -1,21 +1,53 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/grid.dart';
 import '../models/ship.dart';
 import '../services/battle_service.dart';
+import '../services/bt_permissions.dart';
+import '../services/bt_transport.dart';
+import '../services/game_transport.dart';
 import '../services/sound_service.dart';
 
 enum BattlePhase { home, lobby, place, battle, gameOver }
 
-class BattleProvider extends ChangeNotifier {
-  final BattleService _service = BattleService();
+/// Which network mode the player has chosen.
+enum ConnectionMode { online, btHost, btGuest }
 
-  // Connection
+class BattleProvider extends ChangeNotifier {
+  // Active transport — either WS or BT depending on mode.
+  late GameTransport _transport;
+
+  // Kept so we can recreate the WS transport on demand.
+  WsGameTransport? _wsTransport;
+
+  // Current connection mode.
+  ConnectionMode _connectionMode = ConnectionMode.online;
+  ConnectionMode get connectionMode => _connectionMode;
+
+  BattleProvider({WsGameTransport? wsTransport}) {
+    _wsTransport = wsTransport ?? WsGameTransport();
+    _transport = _wsTransport!;
+    _attachTransportCallbacks(_transport);
+    _loadSettings();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Connection state
+  // ---------------------------------------------------------------------------
+
   bool _connected = false;
   bool get connected => _connected;
 
-  // Session
+  // Status shown while BT host is waiting for a guest.
+  bool _btWaiting = false;
+  bool get btWaiting => _btWaiting;
+
+  // ---------------------------------------------------------------------------
+  // Session state
+  // ---------------------------------------------------------------------------
+
   String? _sessionId;
   String? get sessionId => _sessionId;
   String? _joinCode;
@@ -25,56 +57,65 @@ class BattleProvider extends ChangeNotifier {
   bool _isHost = false;
   bool get isHost => _isHost;
 
+  // ---------------------------------------------------------------------------
   // Phase
+  // ---------------------------------------------------------------------------
+
   BattlePhase _phase = BattlePhase.home;
   BattlePhase get phase => _phase;
 
+  // ---------------------------------------------------------------------------
   // Turn
+  // ---------------------------------------------------------------------------
+
   bool _myTurn = false;
   bool get myTurn => _myTurn;
   String? _activeTurnDeviceId;
   String? get activeTurnDeviceId => _activeTurnDeviceId;
 
+  // ---------------------------------------------------------------------------
   // Settings
+  // ---------------------------------------------------------------------------
+
   String _displayName = 'Player';
   String get displayName => _displayName;
   String? _deviceId;
   String? get deviceId => _deviceId;
 
+  // ---------------------------------------------------------------------------
   // Banner
+  // ---------------------------------------------------------------------------
+
   String? _banner;
   String? get banner => _banner;
   String? _bannerType;
   String? get bannerType => _bannerType;
 
-  // --- Placement phase state ---
+  // ---------------------------------------------------------------------------
+  // Placement phase
+  // ---------------------------------------------------------------------------
 
-  /// Whether the server has confirmed the fleet is valid.
   bool _fleetValid = false;
   bool get fleetValid => _fleetValid;
 
-  /// Whether this player has pressed Ready.
   bool _ready = false;
   bool get ready => _ready;
 
-  /// Whether the peer has pressed Ready.
   bool _peerReady = false;
   bool get peerReady => _peerReady;
 
-  // --- Battle phase state ---
+  // ---------------------------------------------------------------------------
+  // Battle phase
+  // ---------------------------------------------------------------------------
 
-  /// The opponent's grid as seen by this player (shots fired, hits/misses).
   BattleGrid _opponentGrid = BattleGrid();
   BattleGrid get opponentGrid => _opponentGrid;
 
-  /// This player's own grid (ships + opponent's shots on them).
   BattleGrid _myGrid = BattleGrid();
   BattleGrid get myGrid => _myGrid;
 
-  /// Placed ships (kept for initialising myGrid at battle start).
   List<Ship> _myShips = [];
 
-  // Battle stats
   int _shotsFired = 0;
   int get shotsFired => _shotsFired;
 
@@ -87,7 +128,10 @@ class BattleProvider extends ChangeNotifier {
   int _theirShipsSunk = 0;
   int get theirShipsSunk => _theirShipsSunk;
 
+  // ---------------------------------------------------------------------------
   // Game over
+  // ---------------------------------------------------------------------------
+
   String? _winnerDeviceId;
   String? get winnerDeviceId => _winnerDeviceId;
   String? _winnerName;
@@ -95,11 +139,9 @@ class BattleProvider extends ChangeNotifier {
 
   bool get iWon => _winnerDeviceId != null && _winnerDeviceId == _deviceId;
 
-  BattleProvider() {
-    _service.onMessage = _handleMessage;
-    _service.onDisconnect = _handleDisconnect;
-    _loadSettings();
-  }
+  // ---------------------------------------------------------------------------
+  // Internals
+  // ---------------------------------------------------------------------------
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -124,91 +166,287 @@ class BattleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Connection ---
+  void _attachTransportCallbacks(GameTransport t) {
+    t.onMessage = _handleMessage;
+    t.onDisconnect = _handleDisconnect;
+  }
+
+  void _switchTransport(GameTransport t) {
+    // Detach old callbacks before swapping.
+    _transport.onMessage = null;
+    _transport.onDisconnect = null;
+    _transport = t;
+    _attachTransportCallbacks(_transport);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Connection mode switching
+  // ---------------------------------------------------------------------------
+
+  /// Switch to Online mode (WebSocket).
+  /// Safe to call when already in online mode.
+  void selectOnlineMode() {
+    if (_connectionMode == ConnectionMode.online) return;
+    _reset();
+    _connectionMode = ConnectionMode.online;
+    // Restore the WS transport.
+    _wsTransport ??= WsGameTransport();
+    _switchTransport(_wsTransport!);
+    _btWaiting = false;
+    notifyListeners();
+  }
+
+  /// Switch to Bluetooth mode (no connection yet).
+  void selectBluetoothMode() {
+    if (_connectionMode == ConnectionMode.btHost ||
+        _connectionMode == ConnectionMode.btGuest) {
+      return;
+    }
+    _reset();
+    _connectionMode = ConnectionMode.btHost; // will be refined on action
+    _btWaiting = false;
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bluetooth actions
+  // ---------------------------------------------------------------------------
+
+  /// Start hosting a Bluetooth game. Requests permissions, makes device
+  /// discoverable, waits for a guest to connect.
+  Future<void> connectBtHost() async {
+    if (_deviceId == null) {
+      _setBanner('Still loading — try again', 'warning');
+      notifyListeners();
+      return;
+    }
+
+    final btEnabled = await BtPermissions.isBluetoothEnabled();
+    if (!btEnabled) {
+      _setBanner('Bluetooth is off — please enable it first', 'error');
+      notifyListeners();
+      return;
+    }
+
+    _reset();
+    _connectionMode = ConnectionMode.btHost;
+    _isHost = true;
+    _btWaiting = true;
+    _setBanner('Waiting for nearby player...', 'info');
+    notifyListeners();
+
+    final hostTransport = BtHostTransport(
+      hostDeviceId: _deviceId!,
+      hostDisplayName: _displayName,
+      appVersion: '1.0.0',
+    );
+    _switchTransport(hostTransport);
+
+    // connect() blocks until a guest arrives (or fails).
+    await _transport.connect();
+
+    if (!_transport.isConnected) {
+      _btWaiting = false;
+      // onDisconnect will already have set a banner if there was an error.
+      notifyListeners();
+      return;
+    }
+
+    _btWaiting = false;
+    _connected = true;
+
+    // For BT host mode: the transport's LocalBattleHost handles hello/session
+    // internally.  We trigger the standard hello + create_session flow so the
+    // host's own provider state reflects the session.
+    _transport.send({
+      'type': 'hello',
+      'payload': {
+        'device_id': _deviceId!,
+        'display_name': _displayName,
+        'platform': 'android',
+        'app_version': '1.0.0',
+      },
+    });
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    _transport.send({
+      'type': 'create_session',
+      'payload': {'display_name': _displayName, 'app_version': '1.0.0'},
+    });
+
+    notifyListeners();
+  }
+
+  /// Connect as a Bluetooth guest to [device].
+  Future<void> connectBtGuest(BluetoothDevice device) async {
+    if (_deviceId == null) {
+      _setBanner('Still loading — try again', 'warning');
+      notifyListeners();
+      return;
+    }
+
+    _reset();
+    _connectionMode = ConnectionMode.btGuest;
+    _isHost = false;
+    _setBanner('Connecting to ${device.name ?? device.address}...', 'info');
+    notifyListeners();
+
+    final guestTransport = BtGuestTransport()..targetDevice = device;
+    _switchTransport(guestTransport);
+
+    await _transport.connect();
+
+    if (!_transport.isConnected) {
+      // onDisconnect will set the error banner.
+      notifyListeners();
+      return;
+    }
+
+    _connected = true;
+
+    // Send hello then join the fixed local session code ('001').
+    _transport.send({
+      'type': 'hello',
+      'payload': {
+        'device_id': _deviceId!,
+        'display_name': _displayName,
+        'platform': 'android',
+        'app_version': '1.0.0',
+      },
+    });
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    _transport.send({
+      'type': 'join_session',
+      'payload': {
+        'join_code': '001',
+        'display_name': _displayName,
+        'app_version': '1.0.0',
+      },
+    });
+
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Online connection helpers
+  // ---------------------------------------------------------------------------
+
+  WsGameTransport get _ws {
+    // Lazily cast the active transport to WsGameTransport for WS-only calls.
+    // This is only valid when in online mode.
+    return _transport as WsGameTransport;
+  }
 
   void _connectAndHello() {
     if (_deviceId == null) {
       _setBanner('Loading... try again', 'warning');
       return;
     }
-    _service.connect();
-    _service.sendHello(_deviceId!, _displayName, '1.0.0');
+    // Ensure we're using the WS transport.
+    if (_transport is! WsGameTransport) {
+      _wsTransport ??= WsGameTransport();
+      _switchTransport(_wsTransport!);
+    }
+    _ws.connect();
+    _ws.sendHello(_deviceId!, _displayName, '1.0.0');
     _connected = true;
     notifyListeners();
   }
 
-  void _handleDisconnect() {
+  void _handleDisconnect(String reason) {
     _connected = false;
-    _setBanner('Disconnected', 'error');
+    _btWaiting = false;
+    _setBanner('Disconnected: $reason', 'error');
     notifyListeners();
   }
 
-  // --- Actions ---
+  // ---------------------------------------------------------------------------
+  // Online game actions
+  // ---------------------------------------------------------------------------
 
   void autoMatch() {
+    _connectionMode = ConnectionMode.online;
     _connectAndHello();
     Future.delayed(const Duration(milliseconds: 200), () {
-      _service.autoMatch(_displayName, '1.0.0');
+      _ws.autoMatch(_displayName, '1.0.0');
     });
   }
 
   void createSession() {
+    _connectionMode = ConnectionMode.online;
     _isHost = true;
     _connectAndHello();
     Future.delayed(const Duration(milliseconds: 200), () {
-      _service.createSession(_displayName, '1.0.0');
+      _ws.createSession(_displayName, '1.0.0');
     });
   }
 
   void joinSession(String code) {
+    _connectionMode = ConnectionMode.online;
     _isHost = false;
     _connectAndHello();
     Future.delayed(const Duration(milliseconds: 200), () {
-      _service.joinSession(code, _displayName, '1.0.0');
+      _ws.joinSession(code, _displayName, '1.0.0');
     });
   }
 
-  /// Sends the fleet to the server for validation, and caches ships for grid init.
+  // ---------------------------------------------------------------------------
+  // Shared game actions (work for both online and BT)
+  // ---------------------------------------------------------------------------
+
   void submitFleet(List<Ship> ships) {
     if (_sessionId == null) return;
     _myShips = List.unmodifiable(ships);
     final payload = ships.map((s) => s.toJson()).toList();
-    _service.submitFleet(_sessionId!, payload);
+    _transport.send({
+      'type': 'submit_fleet',
+      'session_id': _sessionId!,
+      'payload': {'ships': payload},
+    });
   }
 
-  /// Sends set_ready to the server.
   void setReady(bool value) {
     if (_sessionId == null) return;
     _ready = value;
-    _service.setReady(_sessionId!, value);
+    _transport.send({
+      'type': 'set_ready',
+      'session_id': _sessionId!,
+      'payload': {'ready': value},
+    });
     notifyListeners();
   }
 
-  /// Fires a shot at the opponent's grid.
   void fireShot(int x, int y) {
     if (_sessionId == null) return;
     if (!_myTurn) return;
     if (_opponentGrid.get(x, y) != CellState.empty) return;
-    _service.fireShot(_sessionId!, x, y);
+    _transport.send({
+      'type': 'fire_shot',
+      'session_id': _sessionId!,
+      'payload': {'x': x, 'y': y},
+    });
   }
 
-  /// Requests a rematch — server resets to placement phase.
   void requestRematch() {
     if (_sessionId == null) return;
-    _service.requestRematch(_sessionId!);
+    _transport.send({'type': 'request_rematch', 'session_id': _sessionId!});
   }
 
   void leave() {
     if (_sessionId != null) {
-      _service.leaveSession(_sessionId!);
+      _transport.send({'type': 'leave_session', 'session_id': _sessionId!});
     }
-    _service.disconnect();
+    _transport.disconnect();
     _reset();
     notifyListeners();
   }
 
   void _reset() {
     _connected = false;
+    _btWaiting = false;
     _sessionId = null;
     _joinCode = null;
     _peerName = null;
@@ -232,7 +470,9 @@ class BattleProvider extends ChangeNotifier {
     _winnerName = null;
   }
 
-  // --- Message Handling ---
+  // ---------------------------------------------------------------------------
+  // Message handling (identical to old provider — transport-agnostic)
+  // ---------------------------------------------------------------------------
 
   void _handleMessage(Map<String, dynamic> msg) {
     final type = msg['type'] as String;
@@ -248,6 +488,8 @@ class BattleProvider extends ChangeNotifier {
         final isAuto = payload['auto_match'] as bool? ?? false;
         if (isAuto) {
           _setBanner('Looking for opponent...', 'info');
+        } else if (_connectionMode == ConnectionMode.btHost) {
+          _setBanner('Waiting for nearby player...', 'info');
         } else {
           _setBanner('Code: $_joinCode', 'info');
         }
@@ -264,7 +506,6 @@ class BattleProvider extends ChangeNotifier {
             : payload['host_name'] as String?;
         final isRematch = payload['rematch'] as bool? ?? false;
         if (isRematch) {
-          // Reset battle state for rematch, go back to placement
           _opponentGrid = BattleGrid();
           _myGrid = BattleGrid();
           _myShips = [];
@@ -282,8 +523,6 @@ class BattleProvider extends ChangeNotifier {
           _setBanner('Rematch! Place your ships.', 'success');
         }
         _phase = BattlePhase.place;
-
-      // --- Fleet / ready messages ---
 
       case 'fleet_valid':
         _fleetValid = true;
@@ -311,7 +550,6 @@ class BattleProvider extends ChangeNotifier {
         final activeTurn = payload['active_turn'] as String?;
         _activeTurnDeviceId = activeTurn;
         _myTurn = activeTurn == _deviceId;
-        // Initialise grids from placed ships
         _opponentGrid = BattleGrid();
         _myGrid = BattleGrid();
         for (final ship in _myShips) {
@@ -326,8 +564,6 @@ class BattleProvider extends ChangeNotifier {
         _winnerDeviceId = null;
         _winnerName = null;
         _phase = BattlePhase.battle;
-
-      // --- Battle messages ---
 
       case 'shot_result':
         _handleShotResult(payload);
@@ -348,8 +584,6 @@ class BattleProvider extends ChangeNotifier {
         if (iWon) {
           SoundService.playWin();
         }
-
-      // --- Other messages ---
 
       case 'version_mismatch':
         _setBanner(payload['message'] as String? ?? 'Version mismatch', 'error');
@@ -383,7 +617,6 @@ class BattleProvider extends ChangeNotifier {
       _hits++;
       SoundService.playHit();
     } else if (result == 'sunk') {
-      // Mark all sunk cells on opponent grid
       for (final cellRaw in sunkCellsRaw) {
         final cell = cellRaw as Map<String, dynamic>;
         final cx = cell['x'] as int? ?? 0;
@@ -436,7 +669,7 @@ class BattleProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _service.disconnect();
+    _transport.disconnect();
     super.dispose();
   }
 }

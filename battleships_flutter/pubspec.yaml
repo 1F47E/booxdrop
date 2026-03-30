@@ -18,6 +18,7 @@ dependencies:
   package_info_plus: ^8.0.0
   crypto: ^3.0.0
   cryptography: ^2.7.0
+  flutter_bluetooth_serial: ^0.4.0
 
 dev_dependencies:
   flutter_test:
