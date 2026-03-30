@@ -156,6 +156,11 @@ class BattleProvider extends ChangeNotifier {
       _deviceId = 'flutter_${DateTime.now().millisecondsSinceEpoch}_$hex';
       await prefs.setString('device_id', _deviceId!);
     }
+    // Restore saved connection mode preference
+    final savedMode = prefs.getString('connection_mode');
+    if (savedMode == 'bluetooth') {
+      _connectionMode = ConnectionMode.btHost;
+    }
     notifyListeners();
   }
 
@@ -185,11 +190,12 @@ class BattleProvider extends ChangeNotifier {
 
   /// Switch to Online mode (WebSocket).
   /// Safe to call when already in online mode.
-  void selectOnlineMode() {
+  void selectOnlineMode() async {
     if (_connectionMode == ConnectionMode.online) return;
     _reset();
     _connectionMode = ConnectionMode.online;
-    // Restore the WS transport.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('connection_mode', 'online');
     _wsTransport ??= WsGameTransport();
     _switchTransport(_wsTransport!);
     _btWaiting = false;
@@ -197,12 +203,14 @@ class BattleProvider extends ChangeNotifier {
   }
 
   /// Switch to Bluetooth mode (no connection yet).
-  void selectBluetoothMode() {
+  void selectBluetoothMode() async {
     if (_connectionMode == ConnectionMode.btHost ||
         _connectionMode == ConnectionMode.btGuest) {
       return;
     }
     _reset();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('connection_mode', 'bluetooth');
     _connectionMode = ConnectionMode.btHost; // will be refined on action
     _btWaiting = false;
     notifyListeners();
@@ -340,7 +348,7 @@ class BattleProvider extends ChangeNotifier {
     return _transport as WsGameTransport;
   }
 
-  void _connectAndHello() {
+  Future<void> _connectAndHello() async {
     if (_deviceId == null) {
       _setBanner('Loading... try again', 'warning');
       return;
@@ -350,7 +358,7 @@ class BattleProvider extends ChangeNotifier {
       _wsTransport ??= WsGameTransport();
       _switchTransport(_wsTransport!);
     }
-    _ws.connect();
+    await _ws.connect();
     _ws.sendHello(_deviceId!, _displayName, '1.0.0');
     _connected = true;
     notifyListeners();
@@ -359,7 +367,14 @@ class BattleProvider extends ChangeNotifier {
   void _handleDisconnect(String reason) {
     _connected = false;
     _btWaiting = false;
-    _setBanner('Disconnected: $reason', 'error');
+    // Show user-friendly message instead of raw error codes
+    final friendlyMsg = reason.contains('1001') || reason.contains('401')
+        ? 'Connection lost — no opponent found'
+        : reason.contains('refused')
+            ? 'Cannot connect to server'
+            : 'Disconnected';
+    _setBanner(friendlyMsg, 'error');
+    _phase = BattlePhase.home; // return to home so user can retry
     notifyListeners();
   }
 
@@ -367,30 +382,27 @@ class BattleProvider extends ChangeNotifier {
   // Online game actions
   // ---------------------------------------------------------------------------
 
-  void autoMatch() {
+  Future<void> autoMatch() async {
     _connectionMode = ConnectionMode.online;
-    _connectAndHello();
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _ws.autoMatch(_displayName, '1.0.0');
-    });
+    await _connectAndHello();
+    await Future.delayed(const Duration(milliseconds: 300));
+    _ws.autoMatch(_displayName, '1.0.0');
   }
 
-  void createSession() {
+  Future<void> createSession() async {
     _connectionMode = ConnectionMode.online;
     _isHost = true;
-    _connectAndHello();
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _ws.createSession(_displayName, '1.0.0');
-    });
+    await _connectAndHello();
+    await Future.delayed(const Duration(milliseconds: 300));
+    _ws.createSession(_displayName, '1.0.0');
   }
 
-  void joinSession(String code) {
+  Future<void> joinSession(String code) async {
     _connectionMode = ConnectionMode.online;
     _isHost = false;
-    _connectAndHello();
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _ws.joinSession(code, _displayName, '1.0.0');
-    });
+    await _connectAndHello();
+    await Future.delayed(const Duration(milliseconds: 300));
+    _ws.joinSession(code, _displayName, '1.0.0');
   }
 
   // ---------------------------------------------------------------------------
@@ -592,7 +604,15 @@ class BattleProvider extends ChangeNotifier {
         _setBanner('${_peerName ?? 'Opponent'} left', 'error');
 
       case 'error':
-        _setBanner(payload['message'] as String? ?? 'Error', 'error');
+        final raw = payload['message'] as String? ?? '';
+        // Map technical server errors to kid-friendly messages
+        final friendly = raw.contains('hello') ? 'Connection issue — try again'
+            : raw.contains('not found') ? 'Game not found'
+            : raw.contains('full') ? 'Game is full'
+            : raw.contains('not your turn') ? 'Wait for your turn'
+            : raw.isEmpty ? 'Something went wrong'
+            : raw;
+        _setBanner(friendly, 'error');
 
       case 'pong':
         break;
