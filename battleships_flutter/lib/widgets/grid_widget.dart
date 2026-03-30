@@ -19,11 +19,13 @@ class _GridCell extends StatelessWidget {
   final Color fill;
   final bool hasTapTarget;
   final VoidCallback? onTap;
+  final String? emoji;
 
   const _GridCell({
     required this.fill,
     this.hasTapTarget = false,
     this.onTap,
+    this.emoji,
   });
 
   @override
@@ -33,6 +35,9 @@ class _GridCell extends StatelessWidget {
         color: fill,
         border: Border.all(color: _kBorderColor, width: _kBorderWidth / 2),
       ),
+      child: emoji != null
+          ? Center(child: Text(emoji!, style: const TextStyle(fontSize: 16)))
+          : null,
     );
 
     if (onTap != null) {
@@ -92,6 +97,22 @@ class GridWidget extends StatelessWidget {
     }
   }
 
+  String? _emojiFor(int x, int y) {
+    final state = grid.get(x, y);
+    switch (state) {
+      case CellState.ship:
+        return showShips ? '🚢' : null;
+      case CellState.hit:
+        return '💥';
+      case CellState.miss:
+        return '•';
+      case CellState.sunk:
+        return '🔥';
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
@@ -102,14 +123,6 @@ class GridWidget extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final cellSize =
-                constraints.maxWidth / BattleGrid.size;
-            // Warn in debug if cells are too small for e-ink touch.
-            assert(
-              cellSize >= _kMinCellSize,
-              'Grid cells are $cellSize dp — below e-ink minimum $_kMinCellSize dp',
-            );
-
             return GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate:
@@ -122,6 +135,7 @@ class GridWidget extends StatelessWidget {
                 final y = index ~/ BattleGrid.size;
                 return _GridCell(
                   fill: _colorFor(x, y),
+                  emoji: _emojiFor(x, y),
                   hasTapTarget: onCellTap != null,
                   onTap: onCellTap != null ? () => onCellTap!(x, y) : null,
                 );

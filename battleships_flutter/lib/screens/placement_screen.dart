@@ -245,7 +245,7 @@ class _PlacementScreenState extends State<PlacementScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -270,16 +270,19 @@ class _PlacementScreenState extends State<PlacementScreen> {
 
               const SizedBox(height: 8),
 
-              // Grid — square, fills available width
-              GridWidget(
-                grid: _grid,
-                onCellTap: _canTapGrid(battle) ? _onCellTap : null,
-                showShips: true,
-                previewCells: _previewCells,
-                invalidCells: _invalidCells,
+              // Grid — constrained height so buttons fit below
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: GridWidget(
+                  grid: _grid,
+                  onCellTap: _canTapGrid(battle) ? _onCellTap : null,
+                  showShips: true,
+                  previewCells: _previewCells,
+                  invalidCells: _invalidCells,
+                ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               // Ship selector (hidden after fleet is submitted)
               if (!battle.fleetValid)
