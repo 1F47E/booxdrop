@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/maze.dart';
 import '../services/game_service.dart';
@@ -69,6 +70,7 @@ class GameProvider extends ChangeNotifier {
   // Settings
   String _displayName = 'Player';
   String get displayName => _displayName;
+  String _appVersion = '1.0.0';
   String _serverUrl = 'wss://maze.mos6581.cc/ws/maze';
   String get serverUrl => _serverUrl;
   String get serverBaseUrl => _serverUrl
@@ -94,6 +96,10 @@ class GameProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _displayName = prefs.getString('display_name') ?? 'Player';
     _serverUrl = prefs.getString('server_url') ?? 'wss://maze.mos6581.cc/ws/maze';
+    try {
+      final info = await PackageInfo.fromPlatform();
+      _appVersion = info.version;
+    } catch (_) {}
     // Persistent device ID — generated once, reused forever
     _deviceId = prefs.getString('device_id');
     if (_deviceId == null) {
@@ -120,7 +126,7 @@ class GameProvider extends ChangeNotifier {
       return;
     }
     _service.connect(_serverUrl);
-    _service.sendHello(_deviceId!, _displayName, '1.0.0');
+    _service.sendHello(_deviceId!, _displayName, _appVersion);
     _connected = true;
     notifyListeners();
   }
@@ -353,7 +359,15 @@ class GameProvider extends ChangeNotifier {
         _phase = GamePhase.build;
 
       case 'version_mismatch':
-        _setBanner(payload['message'] as String? ?? 'Version mismatch', 'error');
+        final hostV = payload['host_app_version'] as String? ?? '';
+        final guestV = payload['guest_app_version'] as String? ?? '';
+        final myV = _appVersion;
+        final olderIsMe = (myV == hostV && _isHost) || (myV == guestV && !_isHost);
+        if (olderIsMe) {
+          _setBanner('Update the app for best experience!', 'warning');
+        } else {
+          _setBanner('Other player has an older version', 'warning');
+        }
 
       case 'maze_valid':
         _validationError = null;

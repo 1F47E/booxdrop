@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/grid.dart';
 import '../models/ship.dart';
@@ -79,6 +80,7 @@ class BattleProvider extends ChangeNotifier {
 
   String _displayName = 'Player';
   String get displayName => _displayName;
+  String _appVersion = '1.0.0';
   String? _deviceId;
   String? get deviceId => _deviceId;
 
@@ -146,6 +148,10 @@ class BattleProvider extends ChangeNotifier {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _displayName = prefs.getString('display_name') ?? 'Player';
+    try {
+      final info = await PackageInfo.fromPlatform();
+      _appVersion = info.version;
+    } catch (_) {}
     _deviceId = prefs.getString('device_id');
     if (_deviceId == null) {
       final r = Random.secure();
@@ -246,7 +252,7 @@ class BattleProvider extends ChangeNotifier {
     final hostTransport = BtHostTransport(
       hostDeviceId: _deviceId!,
       hostDisplayName: _displayName,
-      appVersion: '1.0.0',
+      appVersion: _appVersion,
     );
     _switchTransport(hostTransport);
 
@@ -272,7 +278,7 @@ class BattleProvider extends ChangeNotifier {
         'device_id': _deviceId!,
         'display_name': _displayName,
         'platform': 'android',
-        'app_version': '1.0.0',
+        'app_version': _appVersion,
       },
     });
 
@@ -280,7 +286,7 @@ class BattleProvider extends ChangeNotifier {
 
     _transport.send({
       'type': 'create_session',
-      'payload': {'display_name': _displayName, 'app_version': '1.0.0'},
+      'payload': {'display_name': _displayName, 'app_version': _appVersion},
     });
 
     notifyListeners();
@@ -321,7 +327,7 @@ class BattleProvider extends ChangeNotifier {
         'device_id': _deviceId!,
         'display_name': _displayName,
         'platform': 'android',
-        'app_version': '1.0.0',
+        'app_version': _appVersion,
       },
     });
 
@@ -332,7 +338,7 @@ class BattleProvider extends ChangeNotifier {
       'payload': {
         'join_code': '001',
         'display_name': _displayName,
-        'app_version': '1.0.0',
+        'app_version': _appVersion,
       },
     });
 
@@ -374,7 +380,7 @@ class BattleProvider extends ChangeNotifier {
       return;
     }
 
-    _ws.sendHello(_deviceId!, _displayName, '1.0.0');
+    _ws.sendHello(_deviceId!, _displayName, _appVersion);
     _connected = true;
     notifyListeners();
   }
@@ -405,7 +411,7 @@ class BattleProvider extends ChangeNotifier {
     _connectionMode = ConnectionMode.online;
     await _connectAndHello();
     await Future.delayed(const Duration(milliseconds: 300));
-    _ws.autoMatch(_displayName, '1.0.0');
+    _ws.autoMatch(_displayName, _appVersion);
   }
 
   Future<void> createSession() async {
@@ -413,7 +419,7 @@ class BattleProvider extends ChangeNotifier {
     _isHost = true;
     await _connectAndHello();
     await Future.delayed(const Duration(milliseconds: 300));
-    _ws.createSession(_displayName, '1.0.0');
+    _ws.createSession(_displayName, _appVersion);
   }
 
   Future<void> joinSession(String code) async {
@@ -421,7 +427,7 @@ class BattleProvider extends ChangeNotifier {
     _isHost = false;
     await _connectAndHello();
     await Future.delayed(const Duration(milliseconds: 300));
-    _ws.joinSession(code, _displayName, '1.0.0');
+    _ws.joinSession(code, _displayName, _appVersion);
   }
 
   // ---------------------------------------------------------------------------
@@ -622,7 +628,15 @@ class BattleProvider extends ChangeNotifier {
         }
 
       case 'version_mismatch':
-        _setBanner('Please update the app to play', 'error');
+        final hostV = payload['host_app_version'] as String? ?? '';
+        final guestV = payload['guest_app_version'] as String? ?? '';
+        final myV = _appVersion;
+        final olderIsMe = (myV == hostV && _isHost) || (myV == guestV && !_isHost);
+        if (olderIsMe) {
+          _setBanner('Update the app for best experience!', 'warning');
+        } else {
+          _setBanner('Other player has an older version', 'warning');
+        }
 
       case 'peer_left':
         _setBanner('${_peerName ?? 'Opponent'} left', 'error');
