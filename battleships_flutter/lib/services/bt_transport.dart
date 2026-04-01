@@ -131,7 +131,12 @@ class BtHostTransport extends GameTransport {
     try {
       _connection = await connectionProvider();
     } catch (e) {
-      onDisconnect?.call('failed to accept BT connection: $e');
+      final msg = e.toString();
+      if (msg.contains('MissingPlugin')) {
+        onDisconnect?.call('Bluetooth hosting not supported on this device');
+      } else {
+        onDisconnect?.call('Could not start Bluetooth game');
+      }
       return;
     }
 
