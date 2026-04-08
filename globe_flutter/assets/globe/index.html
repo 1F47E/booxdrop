@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a1628; }
+  #globe { width: 100%; height: 100%; }
+  #tap-hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-family: sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    background: rgba(0,0,0,0.5);
+    padding: 8px 20px;
+    border-radius: 20px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #tap-hint.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="globe"></div>
+<div id="tap-hint">Tap the globe!</div>
+
+<script src="https://unpkg.com/globe.gl@2.38.1/dist/globe.gl.min.js"></script>
+<script src="https://unpkg.com/three@0.174.0/build/three.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  let globe;
+  let flagData = [];
+  let arcData = [];
+  let labelData = [];
+  let clickEnabled = true;
+
+  function init() {
+    const container = document.getElementById('globe');
+
+    globe = Globe()(container)
+      .globeImageUrl('https://unpkg.com/three-globe@2.38.0/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('https://unpkg.com/three-globe@2.38.0/example/img/earth-topology.png')
+      .backgroundImageUrl('https://unpkg.com/three-globe@2.38.0/example/img/night-sky.png')
+      .showAtmosphere(true)
+      .atmosphereColor('#4da6ff')
+      .atmosphereAltitude(0.15)
+      // Points layer for flags
+      .pointsData(flagData)
+      .pointLat(d => d.lat)
+      .pointLng(d => d.lng)
+      .pointColor(d => d.color)
+      .pointAltitude(d => d.alt)
+      .pointRadius(d => d.radius)
+      // Arcs layer for distance line
+      .arcsData(arcData)
+      .arcStartLat(d => d.startLat)
+      .arcStartLng(d => d.startLng)
+      .arcEndLat(d => d.endLat)
+      .arcEndLng(d => d.endLng)
+      .arcColor(d => d.color)
+      .arcAltitude(0.15)
+      .arcStroke(2)
+      .arcDashLength(0.4)
+      .arcDashGap(0.2)
+      .arcDashAnimateTime(1500)
+      // Labels layer
+      .labelsData(labelData)
+      .labelLat(d => d.lat)
+      .labelLng(d => d.lng)
+      .labelText(d => d.text)
+      .labelSize(d => d.size || 1.5)
+      .labelColor(d => d.color || '#ffffff')
+      .labelDotRadius(0.4)
+      .labelAltitude(0.01)
+      // Globe click
+      .onGlobeClick(onGlobeClick);
+
+    // Disable auto-rotate for e-ink (less animation)
+    const controls = globe.controls();
+    controls.autoRotate = false;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+    // Limit zoom for kids
+    controls.minDistance = 150;
+    controls.maxDistance = 500;
+
+    // Tell Flutter we're ready
+    sendToFlutter({ type: 'ready' });
+  }
+
+  function onGlobeClick(coords) {
+    if (!clickEnabled) return;
+    sendToFlutter({
+      type: 'click',
+      lat: Math.round(coords.lat * 100) / 100,
+      lng: Math.round(coords.lng * 100) / 100
+    });
+  }
+
+  function sendToFlutter(obj) {
+    if (window.GlobeChannel) {
+      window.GlobeChannel.postMessage(JSON.stringify(obj));
+    }
+  }
+
+  // ── Functions called from Flutter ────────────────────────────
+
+  // Rotate globe to a random position so kid can't memorize
+  window.newRound = function() {
+    flagData = [];
+    arcData = [];
+    labelData = [];
+    globe.pointsData(flagData).arcsData(arcData).labelsData(labelData);
+    clickEnabled = true;
+
+    // Random lat/lng for initial view
+    const lat = (Math.random() - 0.5) * 100;
+    const lng = (Math.random() - 0.5) * 300;
+    globe.pointOfView({ lat: lat, lng: lng, altitude: 2.2 }, 800);
+
+    // Show tap hint
+    const hint = document.getElementById('tap-hint');
+    hint.classList.add('show');
+    setTimeout(() => hint.classList.remove('show'), 3000);
+  };
+
+  // Place player's flag at guessed position
+  window.placeFlag = function(lat, lng) {
+    clickEnabled = false;
+    flagData = [{
+      lat: lat,
+      lng: lng,
+      color: '#FF6B35',
+      alt: 0.12,
+      radius: 0.6
+    }];
+    globe.pointsData(flagData);
+
+    // Zoom in slightly to the guessed area
+    globe.pointOfView({ lat: lat, lng: lng, altitude: 1.8 }, 600);
+  };
+
+  // Show correct answer, arc from guess to answer
+  window.showAnswer = function(ansLat, ansLng, guessLat, guessLng) {
+    // Add correct location marker (green)
+    flagData.push({
+      lat: ansLat,
+      lng: ansLng,
+      color: '#00E676',
+      alt: 0.15,
+      radius: 0.8
+    });
+    globe.pointsData(flagData);
+
+    // Add labels
+    labelData = [
+      { lat: guessLat, lng: guessLng, text: 'You', size: 1.2, color: '#FF6B35' },
+      { lat: ansLat, lng: ansLng, text: 'Here!', size: 1.5, color: '#00E676' }
+    ];
+    globe.labelsData(labelData);
+
+    // Arc between guess and answer
+    arcData = [{
+      startLat: guessLat,
+      startLng: guessLng,
+      endLat: ansLat,
+      endLng: ansLng,
+      color: ['#FF6B35', '#00E676']
+    }];
+    globe.arcsData(arcData);
+
+    // Adjust view to show both points
+    const midLat = (guessLat + ansLat) / 2;
+    const midLng = (guessLng + ansLng) / 2;
+    globe.pointOfView({ lat: midLat, lng: midLng, altitude: 2.0 }, 800);
+  };
+
+  // Full reset
+  window.resetGlobe = function() {
+    flagData = [];
+    arcData = [];
+    labelData = [];
+    globe.pointsData(flagData).arcsData(arcData).labelsData(labelData);
+    clickEnabled = true;
+    globe.pointOfView({ lat: 20, lng: 0, altitude: 2.5 }, 600);
+  };
+
+  // ── Initialize ───────────────────────────────────────────────
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
